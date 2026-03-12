@@ -1,21 +1,25 @@
 {
   "name": "eventsync-server",
   "version": "1.0.0",
-  "description": "Express + MongoDB API server for EventSync event management system",
+  "description": "Professional Express.js API server for EventSync - Campus Event Management & QR Analytics Platform",
   "main": "index.js",
-  "author": "",
+  "author": "EventSync Team",
   "license": "MIT",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "seed": "node seedEvents.js"
   },
   "keywords": [
     "events",
     "api",
     "express",
     "mongodb",
-    "rest"
+    "rest",
+    "campus-management",
+    "qr-analytics",
+    "professional"
   ],
   "dependencies": {
     "cors": "^2.8.5",
@@ -28,8 +32,12 @@
     "nodemon": "^2.0.22"
   },
   "engines": {
-    "node": ">=14.0.0",
-    "npm": ">=6.0.0"
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DulharaManawadu/EventSync_SLIIT_EventManagementSystem"
   }
 }
 

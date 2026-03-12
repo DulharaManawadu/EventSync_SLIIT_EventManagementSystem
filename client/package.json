@@ -1,24 +1,39 @@
 {
-  "name": "client",
+  "name": "eventsync-client",
   "version": "1.0.0",
   "private": true,
-  "description": "React client application",
+  "description": "Professional React frontend application for EventSync Campus Event Management Platform",
   "main": "index.js",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "react",
+    "frontend",
+    "event-management",
+    "campus-events",
+    "qr-analytics",
+    "professional"
+  ],
+  "author": "EventSync Team",
+  "license": "MIT",
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "^5.0.1",
     "react-router-dom": "^6.14.1",
     "react-helmet": "^6.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0"
   },
   "browserslist": {
     "production": [
@@ -31,5 +46,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DulharaManawadu/EventSync_SLIIT_EventManagementSystem"
   }
 }
