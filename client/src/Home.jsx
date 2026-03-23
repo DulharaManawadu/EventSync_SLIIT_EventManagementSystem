@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import Header from './Header';
+import Footer from './Footer';
 import { Link } from 'react-router-dom';
 
 export default function Home() {
@@ -26,7 +27,7 @@ export default function Home() {
           prevEl: '.swiper-button-prev'
         },
         on: {
-          progress: function() {
+          progress: function () {
             const swiper = this;
             for (let i = 0; i < swiper.slides.length; i++) {
               const slideProgress = swiper.slides[i].progress;
@@ -38,13 +39,13 @@ export default function Home() {
               }
             }
           },
-          touchStart: function() {
+          touchStart: function () {
             const swiper = this;
             for (let i = 0; i < swiper.slides.length; i++) {
               swiper.slides[i].style.transition = '';
             }
           },
-          setTransition: function(speed) {
+          setTransition: function (speed) {
             const swiper = this;
             for (let i = 0; i < swiper.slides.length; i++) {
               swiper.slides[i].style.transition = speed + 'ms';
@@ -58,21 +59,19 @@ export default function Home() {
       };
 
       try {
-        const swiperInstance = new window.Swiper('.swiper-container', swiperOptions);
+        new window.Swiper('.swiper-container', swiperOptions);
         console.log('Swiper initialized successfully');
       } catch (error) {
         console.error('Error initializing Swiper:', error);
       }
     };
 
-    // Wait for DOM to be ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', initSwiper);
     } else {
       initSwiper();
     }
 
-    // Initialize OWL Carousel for testimonials
     const initOwlCarousel = () => {
       if (window.jQuery && window.jQuery.fn.owlCarousel) {
         try {
@@ -93,13 +92,12 @@ export default function Home() {
 
     setTimeout(initOwlCarousel, 500);
 
-    // Initialize tabs functionality
     if (window.jQuery) {
       try {
-        window.jQuery('.menu div').on('click', function() {
+        window.jQuery('.menu div').on('click', function () {
           window.jQuery('.menu div').removeClass('active');
           window.jQuery(this).addClass('active');
-          
+
           const tabIndex = window.jQuery(this).index();
           window.jQuery('.nacc li').removeClass('active');
           window.jQuery('.nacc li').eq(tabIndex).addClass('active');
@@ -110,7 +108,6 @@ export default function Home() {
       }
     }
 
-    // Cleanup function
     return () => {
       if (document.readyState === 'loading') {
         document.removeEventListener('DOMContentLoaded', initSwiper);
@@ -122,10 +119,12 @@ export default function Home() {
     <>
       <Helmet>
         <title>EventSync - Campus Event Management Platform</title>
-        <meta name="description" content="EventSync - SLIIT Campus Event Management & QR Analytics Platform" />
+        <meta
+          name="description"
+          content="EventSync - SLIIT Campus Event Management & QR Analytics Platform"
+        />
       </Helmet>
 
-      {/* Header Component */}
       <Header />
 
       {/* ***** Main Banner Area Start ***** */}
@@ -148,11 +147,11 @@ export default function Home() {
                       </h2>
                       <div className="div-dec" />
                       <p>
-                        EventSync is a Campus Event Management & Sponsorship Platform designed for SLIIT.
-                        Organizers can create, edit, and submit events for approval while administrators
-                        control the full event lifecycle from Draft → Pending → Approved → Completed.
-                        Only approved events become visible to students, ensuring structured campus
-                        activities.
+                        EventSync is a Campus Event Management & Sponsorship Platform designed for
+                        SLIIT. Organizers can create, edit, and submit events for approval while
+                        administrators control the full event lifecycle from Draft → Pending →
+                        Approved → Completed. Only approved events become visible to students,
+                        ensuring structured campus activities.
                       </p>
                       <div className="buttons">
                         <div className="green-button">
@@ -186,10 +185,11 @@ export default function Home() {
                       </h2>
                       <div className="div-dec" />
                       <p>
-                        Students can browse approved events and register securely with enforced capacity limits
-                        and duplicate prevention. Sponsors can explore upcoming events, apply for Gold, Silver,
-                        or Bronze sponsorship tiers, and collaborate directly with organizers to support
-                        successful campus experiences.
+                        Students can browse approved events and register securely with enforced
+                        capacity limits and duplicate prevention. Sponsors can explore upcoming
+                        events, apply for Gold, Silver, or Bronze sponsorship tiers, and
+                        collaborate directly with organizers to support successful campus
+                        experiences.
                       </p>
                       <div className="buttons">
                         <div className="green-button">
@@ -206,7 +206,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* ===== SLIDE 3 : QR & Analytics (Your Module) ===== */}
+          {/* ===== SLIDE 3 : QR & Analytics ===== */}
           <div className="swiper-slide">
             <div
               className="slide-inner"
@@ -223,11 +223,12 @@ export default function Home() {
                       </h2>
                       <div className="div-dec" />
                       <p>
-                        Every registration generates a secure QR token linked to the event and user.
-                        Organizers can activate check-in mode and scan QR codes to validate attendance
-                        in real-time. After event completion, the analytics dashboard displays total
-                        registrations, attendance rate, no-show count, capacity utilization, and
-                        check-in timeline insights for data-driven decision making.
+                        Every registration generates a secure QR token linked to the event and
+                        user. Organizers can activate check-in mode and scan QR codes to validate
+                        attendance in real-time. After event completion, the analytics dashboard
+                        displays total registrations, attendance rate, no-show count, capacity
+                        utilization, and check-in timeline insights for data-driven decision
+                        making.
                       </p>
                       <div className="buttons">
                         <div className="green-button">
@@ -245,13 +246,11 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Navigation */}
         <div className="swiper-button-next swiper-button-white" />
         <div className="swiper-button-prev swiper-button-white" />
       </div>
       {/* ***** Main Banner Area End ***** */}
 
-      {/* Services Section */}
       <section className="services" id="services">
         <div className="container">
           <div className="row">
@@ -260,7 +259,9 @@ export default function Home() {
                 <i className="fas fa-archive" />
                 <h4>Event Lifecycle Management</h4>
                 <p>
-                  EventSync allows organizers to create, edit, and submit campus events while administrators manage approvals through Draft, Pending, Approved, and Completed stages.
+                  EventSync allows organizers to create, edit, and submit campus events while
+                  administrators manage approvals through Draft, Pending, Approved, and Completed
+                  stages.
                 </p>
               </div>
             </div>
@@ -269,7 +270,8 @@ export default function Home() {
                 <i className="fas fa-cloud" />
                 <h4>Secure Event Registration</h4>
                 <p>
-                  Students can browse approved events and register securely with automated capacity limits and duplicate registration prevention.
+                  Students can browse approved events and register securely with automated capacity
+                  limits and duplicate registration prevention.
                 </p>
               </div>
             </div>
@@ -278,7 +280,8 @@ export default function Home() {
                 <i className="fas fa-charging-station" />
                 <h4>Real-Time QR Check-In</h4>
                 <p>
-                  Each registration generates a secure QR code for attendance validation. Organizers can activate check-in mode and scan participants efficiently.
+                  Each registration generates a secure QR code for attendance validation.
+                  Organizers can activate check-in mode and scan participants efficiently.
                 </p>
               </div>
             </div>
@@ -287,7 +290,8 @@ export default function Home() {
                 <i className="fas fa-suitcase" />
                 <h4>Sponsorship Management</h4>
                 <p>
-                  Sponsors can explore upcoming events, apply for sponsorship packages, and collaborate directly with organizers to support successful campus events.
+                  Sponsors can explore upcoming events, apply for sponsorship packages, and
+                  collaborate directly with organizers to support successful campus events.
                 </p>
               </div>
             </div>
@@ -296,7 +300,8 @@ export default function Home() {
                 <i className="fas fa-archway" />
                 <h4>Admin Control & Monitoring</h4>
                 <p>
-                  Administrators can monitor event approvals, track cancellations, manage users, and ensure structured campus event operations.
+                  Administrators can monitor event approvals, track cancellations, manage users,
+                  and ensure structured campus event operations.
                 </p>
               </div>
             </div>
@@ -305,7 +310,8 @@ export default function Home() {
                 <i className="fas fa-puzzle-piece" />
                 <h4>Analytics & Reporting Dashboard</h4>
                 <p>
-                  The analytics dashboard provides insights including total registrations, attendance rate, no-shows, and capacity utilization for data-driven decisions.
+                  The analytics dashboard provides insights including total registrations,
+                  attendance rate, no-shows, and capacity utilization for data-driven decisions.
                 </p>
               </div>
             </div>
@@ -313,12 +319,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* additional page sections converted to JSX */}
       <section className="simple-cta">
         <div className="container">
           <div className="row">
             <div className="col-lg-5">
-              <h4>Smart <em>Campus Event Management</em> for <strong>SLIIT</strong></h4>
+              <h4>
+                Smart <em>Campus Event Management</em> for <strong>SLIIT</strong>
+              </h4>
             </div>
             <div className="col-lg-7">
               <div className="buttons">
@@ -349,14 +356,19 @@ export default function Home() {
                   <div className="row">
                     <div className="col-lg-12">
                       <div className="menu">
-                        <div className="active gradient-border"><span>Event Lifecycle</span></div>
-                        <div className="gradient-border"><span>Registration & Sponsorship</span></div>
-                        <div className="gradient-border"><span>QR & Analytics</span></div>
+                        <div className="active gradient-border">
+                          <span>Event Lifecycle</span>
+                        </div>
+                        <div className="gradient-border">
+                          <span>Registration & Sponsorship</span>
+                        </div>
+                        <div className="gradient-border">
+                          <span>QR & Analytics</span>
+                        </div>
                       </div>
                     </div>
                     <div className="col-lg-12">
                       <ul className="nacc">
-                        {/* TAB 1: Event Lifecycle */}
                         <li className="active">
                           <div>
                             <div className="main-list">
@@ -392,7 +404,6 @@ export default function Home() {
                           </div>
                         </li>
 
-                        {/* TAB 2: Registration & Sponsorship */}
                         <li>
                           <div>
                             <div className="main-list">
@@ -428,7 +439,6 @@ export default function Home() {
                           </div>
                         </li>
 
-                        {/* TAB 3: QR & Analytics */}
                         <li>
                           <div>
                             <div className="main-list">
@@ -474,16 +484,19 @@ export default function Home() {
               <div className="right-content">
                 <h4>Transforming Campus Events at SLIIT</h4>
                 <p>
-                  EventSync is designed to streamline campus event management by integrating event lifecycle control, smart registration, sponsorship coordination, and secure QR-based attendance tracking.
-                  <br /><br />
-                  Our goal is to provide a structured, transparent, and analytics-driven system that improves efficiency, prevents conflicts, and enhances student participation.
+                  EventSync is designed to streamline campus event management by integrating event
+                  lifecycle control, smart registration, sponsorship coordination, and secure
+                  QR-based attendance tracking.
+                  <br />
+                  <br />
+                  Our goal is to provide a structured, transparent, and analytics-driven system
+                  that improves efficiency, prevents conflicts, and enhances student participation.
                 </p>
                 <div className="green-button">
                   <a href="#">Explore Platform Features</a>
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </section>
@@ -506,25 +519,52 @@ export default function Home() {
                   <div className="col-lg-6">
                     <fieldset>
                       <label htmlFor="name">Your Name</label>
-                      <input type="text" name="name" id="name" placeholder="Enter your full name" autoComplete="on" required />
+                      <input
+                        type="text"
+                        name="name"
+                        id="name"
+                        placeholder="Enter your full name"
+                        autoComplete="on"
+                        required
+                      />
                     </fieldset>
                   </div>
                   <div className="col-lg-6">
                     <fieldset>
                       <label htmlFor="email">Your Email</label>
-                      <input type="email" name="email" id="email" pattern="[^ @]*@[^ @]*" placeholder="Enter your SLIIT email" required />
+                      <input
+                        type="email"
+                        name="email"
+                        id="email"
+                        pattern="[^ @]*@[^ @]*"
+                        placeholder="Enter your SLIIT email"
+                        required
+                      />
                     </fieldset>
                   </div>
                   <div className="col-lg-12">
                     <fieldset>
                       <label htmlFor="subject">Event Title / Subject</label>
-                      <input type="text" name="subject" id="subject" placeholder="Enter event title or request subject" autoComplete="on" />
+                      <input
+                        type="text"
+                        name="subject"
+                        id="subject"
+                        placeholder="Enter event title or request subject"
+                        autoComplete="on"
+                      />
                     </fieldset>
                   </div>
                   <div className="col-lg-12">
                     <fieldset>
-                      <label htmlFor="chooseOption" className="form-label">Request Type</label>
-                      <select name="Category" className="form-select" aria-label="Default select example" id="chooseOption">
+                      <label htmlFor="chooseOption" className="form-label">
+                        Request Type
+                      </label>
+                      <select
+                        name="Category"
+                        className="form-select"
+                        aria-label="Default select example"
+                        id="chooseOption"
+                      >
                         <option value="">Choose Request Type</option>
                         <option value="Event Creation">Event Creation</option>
                         <option value="Event Approval">Event Approval</option>
@@ -535,7 +575,9 @@ export default function Home() {
                   </div>
                   <div className="col-lg-12">
                     <fieldset>
-                      <button type="submit" id="form-submit" className="orange-button">Submit Request</button>
+                      <button type="submit" id="form-submit" className="orange-button">
+                        Submit Request
+                      </button>
                     </fieldset>
                   </div>
                 </div>
@@ -555,30 +597,51 @@ export default function Home() {
               </div>
             </div>
             <div className="col-lg-10 offset-lg-1">
-              <div className="owl-testimonials owl-carousel" style={{ position: 'relative', zIndex: 5 }}>
+              <div
+                className="owl-testimonials owl-carousel"
+                style={{ position: 'relative', zIndex: 5 }}
+              >
                 <div className="item">
                   <i className="fa fa-quote-left" />
-                  <p>"EventSync has completely streamlined our event approval process. Managing Draft, Pending, and Approved stages is now structured and transparent. It has reduced confusion between organizers and admins."</p>
+                  <p>
+                    "EventSync has completely streamlined our event approval process. Managing
+                    Draft, Pending, and Approved stages is now structured and transparent. It has
+                    reduced confusion between organizers and admins."
+                  </p>
                   <h4>Faculty Event Coordinator</h4>
                   <span>SLIIT Administration</span>
                   <div className="right-image">
-                    <img src="/assets/images/testimonials-02.jpg" alt="Faculty Coordinator" />
+                    <img
+                      src="/assets/images/testimonials-02.jpg"
+                      alt="Faculty Coordinator"
+                    />
                   </div>
                 </div>
 
                 <div className="item">
                   <i className="fa fa-quote-left" />
-                  <p>"The QR-based attendance system is fast and secure. It prevents duplicate entries and automatically tracks participation data. The analytics dashboard gives us clear insights after every event."</p>
+                  <p>
+                    "The QR-based attendance system is fast and secure. It prevents duplicate
+                    entries and automatically tracks participation data. The analytics dashboard
+                    gives us clear insights after every event."
+                  </p>
                   <h4>Student Organizer</h4>
                   <span>IEEE Student Branch</span>
                   <div className="right-image">
-                    <img src="/assets/images/testimonial-03.jpeg" alt="Student Organizer" />
+                    <img
+                      src="/assets/images/testimonial-03.jpeg"
+                      alt="Student Organizer"
+                    />
                   </div>
                 </div>
 
                 <div className="item">
                   <i className="fa fa-quote-left" />
-                  <p>"Registration is simple and efficient. I can easily browse approved events, register without duplication issues, and access my QR code instantly. It makes campus participation more organized."</p>
+                  <p>
+                    "Registration is simple and efficient. I can easily browse approved events,
+                    register without duplication issues, and access my QR code instantly. It makes
+                    campus participation more organized."
+                  </p>
                   <h4>Undergraduate Student</h4>
                   <span>SLIIT Participant</span>
                   <div className="right-image">
@@ -591,242 +654,7 @@ export default function Home() {
         </div>
       </section>
 
-      
-      <footer style={{
-              background: 'linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 50%, #16213e 100%)',
-              color: '#ffffff',
-              padding: '60px 0 30px',
-              marginTop: '80px',
-              position: 'relative',
-              overflow: 'hidden'
-            }}>
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-                opacity: 0.1
-              }}></div>
-              
-              <div className="container" style={{position: 'relative', zIndex: 1}}>
-                <div className="row">
-                  {/* Company Info */}
-                  <div className="col-lg-4 col-md-6 mb-4">
-                    <div style={{marginBottom: '20px'}}>
-                      <h3 style={{
-                        color: '#ffffff',
-                        fontSize: '28px',
-                        fontWeight: '700',
-                        marginBottom: '15px',
-                        display: 'flex',
-                        alignItems: 'center'
-                      }}>
-                        <Link to="/" style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          textDecoration: 'none',
-                          color: '#ffffff',
-                          marginBottom: '15px'
-                        }}>
-                          <img 
-                            src="/assets/images/logo.png" 
-                            alt="EventSync"
-                            style={{
-                              height: '40px',
-                              width: 'auto',
-                              marginRight: '12px'
-                            }}
-                          />
-                        </Link>
-                      </h3>
-                      <p style={{
-                        color: 'rgba(255, 255, 255, 0.8)',
-                        lineHeight: '1.6',
-                        fontSize: '15px'
-                      }}>
-                        Transforming campus event management with smart QR analytics, seamless registration, and comprehensive approval workflows.
-                      </p>
-                    </div>
-                    
-                    <div style={{display: 'flex', gap: '12px', marginTop: '25px'}}>
-                      {['📧', '📱', '💬', '🌐'].map((icon, index) => (
-                        <div key={index} style={{
-                          width: '40px',
-                          height: '40px',
-                          background: 'rgba(255, 255, 255, 0.1)',
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease',
-                          fontSize: '18px'
-                        }} onMouseOver={(e) => {
-                          e.target.style.background = 'rgba(255, 255, 255, 0.2)';
-                          e.target.style.transform = 'translateY(-3px)';
-                        }} onMouseOut={(e) => {
-                          e.target.style.background = 'rgba(255, 255, 255, 0.1)';
-                          e.target.style.transform = 'translateY(0)';
-                        }}>
-                          {icon}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-      
-                  {/* Quick Links */}
-                  <div className="col-lg-2 col-md-6 mb-4">
-                    <h4 style={{
-                      color: '#ffffff',
-                      fontSize: '18px',
-                      fontWeight: '600',
-                      marginBottom: '20px',
-                      position: 'relative'
-                    }}>
-                      Quick Links
-                      <span style={{
-                        position: 'absolute',
-                        bottom: '-8px',
-                        left: 0,
-                        width: '40px',
-                        height: '3px',
-                        background: 'linear-gradient(45deg, #f093fb 0%, #f5576c 100%)',
-                        borderRadius: '2px'
-                      }}></span>
-                    </h4>
-                    <ul style={{listStyle: 'none', padding: 0}}>
-                      {['Create Event', 'Browse Events', 'Dashboard', 'Analytics'].map((link, index) => (
-                        <li key={index} style={{marginBottom: '12px'}}>
-                          <a href="#" style={{
-                            color: 'rgba(255, 255, 255, 0.7)',
-                            textDecoration: 'none',
-                            fontSize: '14px',
-                            transition: 'all 0.3s ease',
-                            display: 'inline-block'
-                          }} onMouseOver={(e) => {
-                            e.target.style.color = '#ffffff';
-                            e.target.style.transform = 'translateX(5px)';
-                          }} onMouseOut={(e) => {
-                            e.target.style.color = 'rgba(255, 255, 255, 0.7)';
-                            e.target.style.transform = 'translateX(0)';
-                          }}>
-                            → {link}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-      
-                  {/* Features */}
-                  <div className="col-lg-3 col-md-6 mb-4">
-                    <h4 style={{
-                      color: '#ffffff',
-                      fontSize: '18px',
-                      fontWeight: '600',
-                      marginBottom: '20px',
-                      position: 'relative'
-                    }}>
-                      Features
-                      <span style={{
-                        position: 'absolute',
-                        bottom: '-8px',
-                        left: 0,
-                        width: '40px',
-                        height: '3px',
-                        background: 'linear-gradient(45deg, #f093fb 0%, #f5576c 100%)',
-                        borderRadius: '2px'
-                      }}></span>
-                    </h4>
-                    <ul style={{listStyle: 'none', padding: 0}}>
-                      {['QR Check-in System', 'Real-time Analytics', 'Multi-venue Support', 'Sponsorship Management'].map((feature, index) => (
-                        <li key={index} style={{marginBottom: '12px'}}>
-                          <div style={{display: 'flex', alignItems: 'center'}}>
-                            <span style={{
-                              color: '#4ade80',
-                              marginRight: '8px',
-                              fontSize: '12px'
-                            }}>✓</span>
-                            <span style={{
-                              color: 'rgba(255, 255, 255, 0.7)',
-                              fontSize: '14px'
-                            }}>{feature}</span>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-      
-                  {/* Contact Info */}
-                  <div className="col-lg-3 col-md-6 mb-4">
-                    <h4 style={{
-                      color: '#ffffff',
-                      fontSize: '18px',
-                      fontWeight: '600',
-                      marginBottom: '20px',
-                      position: 'relative'
-                    }}>
-                      Contact Info
-                      <span style={{
-                        position: 'absolute',
-                        bottom: '-8px',
-                        left: 0,
-                        width: '40px',
-                        height: '3px',
-                        background: 'linear-gradient(45deg, #f093fb 0%, #f5576c 100%)',
-                        borderRadius: '2px'
-                      }}></span>
-                    </h4>
-                    <div style={{color: 'rgba(255, 255, 255, 0.7)', fontSize: '14px', lineHeight: '1.8'}}>
-                      <div style={{marginBottom: '12px', display: 'flex', alignItems: 'center'}}>
-                        <span style={{marginRight: '10px'}}>📍</span>
-                        <span>SLIIT Campus, Malabe</span>
-                      </div>
-                      <div style={{marginBottom: '12px', display: 'flex', alignItems: 'center'}}>
-                        <span style={{marginRight: '10px'}}>📞</span>
-                        <span>+94 11 123 4567</span>
-                      </div>
-                      <div style={{marginBottom: '12px', display: 'flex', alignItems: 'center'}}>
-                        <span style={{marginRight: '10px'}}>✉️</span>
-                        <span>info@eventsync.sliit.lk</span>
-                      </div>
-                      <div style={{display: 'flex', alignItems: 'center'}}>
-                        <span style={{marginRight: '10px'}}>🕐</span>
-                        <span>Mon-Fri: 9AM-6PM</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-      
-                {/* Bottom Bar */}
-                <div style={{
-                  borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-                  marginTop: '40px',
-                  paddingTop: '30px',
-                  textAlign: 'center'
-                }}>
-                  <div className="row">
-                    <div className="col-lg-12">
-                      <p style={{
-                        color: 'rgba(255, 255, 255, 0.6)',
-                        fontSize: '13px',
-                        margin: 0,
-                        lineHeight: '1.6'
-                      }}>
-                        © 2026 EventSync – Campus Event Management & QR Analytics Platform. All Rights Reserved.
-                        <br />
-                        <span style={{color: 'rgba(255, 255, 255, 0.4)'}}>
-                          Developed for SLIIT Academic Project | Designed for Smart Campus Event Operations | 
-                          <span style={{color: '#4ade80'}}>  </span> Made with passion by SLIIT Students
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </footer>
-          </>
-        );
-      }
-        
+      <Footer />
+    </>
+  );
+}

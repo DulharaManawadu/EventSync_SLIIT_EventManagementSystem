@@ -1,144 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import AdminHeader from './AdminHeader';
+import Footer from './Footer';
 
 export default function EventApproval() {
-  const [activeTab, setActiveTab] = useState('pending');
-  const [selectedEvents, setSelectedEvents] = useState([]);
-
-  // Mock data for demonstration
-  const eventsData = {
-    pending: [
-      {
-        id: 1,
-        title: 'Tech Summit 2024',
-        organizer: 'Computer Science Society',
-        category: 'Technical',
-        faculty: 'Computing',
-        date: '2024-04-15',
-        time: '09:00 AM',
-        venue: 'Main Auditorium',
-        capacity: 200,
-        registered: 189,
-        budget: 50000,
-        description: 'Annual technical summit featuring industry experts and workshops',
-        sponsorshipEnabled: true,
-        sponsorshipTiers: [
-          { tier: 'Gold', price: 25000, benefits: 'Logo placement, speaking slot' },
-          { tier: 'Silver', price: 15000, benefits: 'Logo placement, exhibition booth' }
-        ],
-        submittedDate: '2024-03-28',
-        priority: 'high',
-        status: 'pending'
-      },
-      {
-        id: 2,
-        title: 'Cultural Fusion Night',
-        organizer: 'Cultural Club',
-        category: 'Cultural',
-        faculty: 'Business',
-        date: '2024-04-20',
-        time: '06:00 PM',
-        venue: 'Open Ground',
-        capacity: 500,
-        registered: 234,
-        budget: 75000,
-        description: 'Multi-cultural performance night showcasing diverse traditions',
-        sponsorshipEnabled: true,
-        sponsorshipTiers: [
-          { tier: 'Gold', price: 35000, benefits: 'Main stage branding' },
-          { tier: 'Silver', price: 20000, benefits: 'Program advertisement' }
-        ],
-        submittedDate: '2024-03-29',
-        priority: 'medium',
-        status: 'pending'
-      },
-      {
-        id: 3,
-        title: 'AI Workshop Series',
-        organizer: 'AI Research Club',
-        category: 'Workshop',
-        faculty: 'Computing',
-        date: '2024-04-25',
-        time: '02:00 PM',
-        venue: 'Lab 301',
-        capacity: 50,
-        registered: 47,
-        budget: 15000,
-        description: 'Hands-on workshop covering machine learning fundamentals',
-        sponsorshipEnabled: false,
-        sponsorshipTiers: [],
-        submittedDate: '2024-03-30',
-        priority: 'low',
-        status: 'pending'
-      }
-    ],
-    approved: [
-      {
-        id: 4,
-        title: 'Sports Championship',
-        organizer: 'Sports Club',
-        category: 'Sports',
-        faculty: 'Engineering',
-        date: '2024-04-10',
-        time: '08:00 AM',
-        venue: 'Sports Complex',
-        capacity: 300,
-        registered: 267,
-        budget: 40000,
-        description: 'Inter-faculty sports competition',
-        sponsorshipEnabled: true,
-        sponsorshipTiers: [
-          { tier: 'Gold', price: 20000, benefits: 'Team sponsorship' }
-        ],
-        submittedDate: '2024-03-20',
-        approvedDate: '2024-03-22',
-        priority: 'high',
-        status: 'approved'
-      }
-    ],
-    rejected: [
-      {
-        id: 5,
-        title: 'Gaming Tournament',
-        organizer: 'Gaming Club',
-        category: 'Entertainment',
-        faculty: 'Computing',
-        date: '2024-04-05',
-        time: '03:00 PM',
-        venue: 'Lab 201',
-        capacity: 40,
-        registered: 12,
-        budget: 8000,
-        description: 'Gaming competition with prizes',
-        sponsorshipEnabled: false,
-        sponsorshipTiers: [],
-        submittedDate: '2024-03-15',
-        rejectedDate: '2024-03-18',
-        rejectionReason: 'Low registration interest and venue conflict',
-        priority: 'low',
-        status: 'rejected'
-      }
-    ]
-  };
-
-  const handleEventSelection = (eventId) => {
-    setSelectedEvents(prev => 
-      prev.includes(eventId) 
-        ? prev.filter(id => id !== eventId)
-        : [...prev, eventId]
-    );
-  };
-
-  const handleBulkAction = (action) => {
-    console.log(`Bulk ${action} for events:`, selectedEvents);
-    setSelectedEvents([]);
-  };
-
+  // Helper functions for status and priority colors
   const getStatusColor = (status) => {
     switch(status) {
-      case 'pending': return '#f59e0b';
       case 'approved': return '#10b981';
+      case 'pending': return '#f59e0b';
       case 'rejected': return '#ef4444';
       default: return '#6b7280';
     }
@@ -153,7 +23,180 @@ export default function EventApproval() {
     }
   };
 
-  const currentEvents = eventsData[activeTab] || [];
+  const [activeTab, setActiveTab] = useState('all');
+  const [selectedEvents, setSelectedEvents] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Fetch events from API
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
+  const fetchEvents = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching events from API...');
+      const response = await fetch('http://localhost:5000/api/events');
+      console.log('Response status:', response.status);
+      if (!response.ok) throw new Error('Failed to fetch events');
+      const data = await response.json();
+      console.log('API response data:', data);
+      // Handle different API response formats
+      const eventsData = data && data.data ? data.data : (Array.isArray(data) ? data : []);
+      console.log('Events data to set:', eventsData);
+      setEvents(eventsData);
+    } catch (err) {
+      console.error('Error fetching events:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter events based on active tab
+  const getFilteredEvents = () => {
+    console.log('Filtering events. Active tab:', activeTab);
+    console.log('Total events:', events.length);
+    console.log('Events data:', events);
+    
+    if (activeTab === 'all') {
+      console.log('Returning all events:', events);
+      return events;
+    }
+    const filtered = events.filter(event => event.status === activeTab);
+    console.log('Filtered events:', filtered);
+    console.log('Event statuses:', events.map(e => ({ id: e._id, status: e.status })));
+    return filtered;
+  };
+
+  const currentEvents = getFilteredEvents();
+
+  // Debug: Log tab counts
+  console.log('=== TAB COUNTS ===');
+  console.log('All Events:', events.length);
+  console.log('Pending:', events.filter(e => e.status === 'pending').length);
+  console.log('Approved:', events.filter(e => e.status === 'approved').length);
+  console.log('Rejected:', events.filter(e => e.status === 'rejected').length);
+  console.log('Current tab:', activeTab);
+  console.log('Current events count:', currentEvents.length);
+  console.log('==================');
+
+  const handleEventSelection = (eventId) => {
+    setSelectedEvents(prev => 
+      prev.includes(eventId) 
+        ? prev.filter(id => id !== eventId)
+        : [...prev, eventId]
+    );
+  };
+
+  const handleBulkAction = async (action) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/events/bulk-update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          eventIds: selectedEvents,
+          action: action
+        })
+      });
+      
+      if (!response.ok) throw new Error(`Failed to ${action} events`);
+      
+      // Refresh events after bulk action
+      await fetchEvents();
+      setSelectedEvents([]);
+      setSuccessMessage(`Successfully ${action}d ${selectedEvents.length} events`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleStatusUpdate = async (eventId, newStatus) => {
+    try {
+      console.log(`Updating event ${eventId} to status: ${newStatus}`);
+      const response = await fetch(`http://localhost:5000/api/events/${eventId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      
+      if (!response.ok) throw new Error('Failed to update status');
+      
+      // Update local state
+      setEvents(prev => {
+        const updated = prev.map(event => 
+          event._id === eventId ? { ...event, status: newStatus } : event
+        );
+        console.log('Updated events after status change:', updated);
+        return updated;
+      });
+      
+      setSuccessMessage(`Event status updated to ${newStatus}`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      console.error('Error updating status:', err);
+      setError(err.message);
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  const handleDelete = async (eventId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/events/${eventId}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) throw new Error('Failed to delete event');
+      
+      // Update local state
+      setEvents(prev => prev.filter(event => event._id !== eventId));
+      
+      setSuccessMessage('Event deleted successfully');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      setShowDeleteModal(null);
+    } catch (err) {
+      setError(err.message);
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  const handleUpdateEvent = async (updatedData) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/events/${editingEvent._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedData)
+      });
+      
+      if (!response.ok) throw new Error('Failed to update event');
+      
+      const updatedEvent = await response.json();
+      
+      // Update local state
+      setEvents(prev => prev.map(event => 
+        event._id === editingEvent._id ? updatedEvent.data : event
+      ));
+      
+      setSuccessMessage('Event updated successfully');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      setShowEditModal(false);
+      setEditingEvent(null);
+    } catch (err) {
+      setError(err.message);
+      setTimeout(() => setError(''), 3000);
+    }
+  };
 
   return (
     <>
@@ -222,8 +265,32 @@ export default function EventApproval() {
                     borderRadius: '8px',
                     fontSize: '14px'
                   }}>
-                    Total Events: {Object.values(eventsData).flat().length}
+                    Total Events: {events.length}
                   </div>
+                  
+                  {successMessage && (
+                    <div style={{
+                      background: 'rgba(16, 185, 129, 0.9)',
+                      color: '#ffffff',
+                      padding: '10px 15px',
+                      borderRadius: '8px',
+                      fontSize: '14px'
+                    }}>
+                      ✅ {successMessage}
+                    </div>
+                  )}
+                  
+                  {error && (
+                    <div style={{
+                      background: 'rgba(239, 68, 68, 0.9)',
+                      color: '#ffffff',
+                      padding: '10px 15px',
+                      borderRadius: '8px',
+                      fontSize: '14px'
+                    }}>
+                      ❌ {error}
+                    </div>
+                  )}
                   
                   {selectedEvents.length > 0 && (
                     <div style={{display: 'flex', gap: '10px'}}>
@@ -277,9 +344,10 @@ export default function EventApproval() {
         <div className="container">
           <div style={{display: 'flex', gap: '0', overflowX: 'auto'}}>
             {[
-              { key: 'pending', label: 'Pending Review', count: eventsData.pending.length, icon: '⏳' },
-              { key: 'approved', label: 'Approved', count: eventsData.approved.length, icon: '✅' },
-              { key: 'rejected', label: 'Rejected', count: eventsData.rejected.length, icon: '❌' }
+              { key: 'all', label: 'All Events', count: events.length, icon: '📋' },
+              { key: 'pending', label: 'Pending', count: events.filter(e => e.status === 'pending').length, icon: '⏳' },
+              { key: 'approved', label: 'Approved', count: events.filter(e => e.status === 'approved').length, icon: '✅' },
+              { key: 'rejected', label: 'Rejected', count: events.filter(e => e.status === 'rejected').length, icon: '❌' }
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -321,7 +389,24 @@ export default function EventApproval() {
       <div style={{background: '#f8fafc', minHeight: 'calc(100vh - 200px)', padding: '30px 0'}}>
         <div className="container">
           
-          {currentEvents.length === 0 ? (
+          {loading ? (
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              padding: '60px',
+              textAlign: 'center',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+              border: '1px solid #e5e7eb'
+            }}>
+              <div style={{fontSize: '48px', marginBottom: '20px'}}>⏳</div>
+              <h3 style={{fontSize: '20px', fontWeight: '600', color: '#111827', marginBottom: '10px'}}>
+                Loading Events...
+              </h3>
+              <p style={{color: '#6b7280', fontSize: '16px'}}>
+                Please wait while we fetch the events.
+              </p>
+            </div>
+          ) : currentEvents.length === 0 ? (
             <div style={{
               background: '#ffffff',
               borderRadius: '16px',
@@ -346,7 +431,7 @@ export default function EventApproval() {
           ) : (
             <div className="row">
               {currentEvents.map((event) => (
-                <div key={event.id} className="col-lg-6 mb-4">
+                <div key={event._id} className="col-lg-6 mb-4">
                   <div style={{
                     background: '#ffffff',
                     borderRadius: '16px',
@@ -383,8 +468,8 @@ export default function EventApproval() {
                         {event.status}
                       </span>
                       <span style={{
-                        background: `${getPriorityColor(event.priority)}15`,
-                        color: getPriorityColor(event.priority),
+                        background: `${getPriorityColor(event.priority || 'medium')}15`,
+                        color: getPriorityColor(event.priority || 'medium'),
                         padding: '6px 12px',
                         borderRadius: '20px',
                         fontSize: '12px',
@@ -466,7 +551,7 @@ export default function EventApproval() {
                         lineHeight: '1.6',
                         marginBottom: '20px'
                       }}>
-                        {event.description}
+                        {event.description || 'No description available'}
                       </p>
 
                       <div style={{
@@ -480,7 +565,8 @@ export default function EventApproval() {
                           <div>
                             <div style={{fontSize: '12px', color: '#6b7280'}}>Date & Time</div>
                             <div style={{fontSize: '14px', fontWeight: '500', color: '#111827'}}>
-                              {event.date} at {event.time}
+                              {event.date ? new Date(event.date).toLocaleDateString() : 'Date TBD'} 
+                              {event.time ? ` at ${event.time}` : ''}
                             </div>
                           </div>
                         </div>
@@ -488,15 +574,17 @@ export default function EventApproval() {
                           <span style={{marginRight: '8px'}}>📍</span>
                           <div>
                             <div style={{fontSize: '12px', color: '#6b7280'}}>Venue</div>
-                            <div style={{fontSize: '14px', fontWeight: '500', color: '#111827'}}>{event.venue}</div>
+                            <div style={{fontSize: '14px', fontWeight: '500', color: '#111827'}}>
+                              {event.venue || 'Venue TBD'}
+                            </div>
                           </div>
                         </div>
                         <div style={{display: 'flex', alignItems: 'center'}}>
                           <span style={{marginRight: '8px'}}>👥</span>
                           <div>
-                            <div style={{fontSize: '12px', color: '#6b7280'}}>Attendance</div>
+                            <div style={{fontSize: '12px', color: '#6b7280'}}>Capacity</div>
                             <div style={{fontSize: '14px', fontWeight: '500', color: '#111827'}}>
-                              {event.registered}/{event.capacity}
+                              {event.registered || 0}/{event.capacity || 'Unlimited'}
                             </div>
                           </div>
                         </div>
@@ -505,11 +593,27 @@ export default function EventApproval() {
                           <div>
                             <div style={{fontSize: '12px', color: '#6b7280'}}>Budget</div>
                             <div style={{fontSize: '14px', fontWeight: '500', color: '#111827'}}>
-                              Rs. {event.budget.toLocaleString()}
+                              {event.budget ? `Rs. ${event.budget.toLocaleString()}` : 'Budget TBD'}
                             </div>
                           </div>
                         </div>
                       </div>
+
+                      {/* Organizer Info */}
+                      {event.organizer && (
+                        <div style={{
+                          background: '#f8fafc',
+                          padding: '15px',
+                          borderRadius: '8px',
+                          marginBottom: '20px',
+                          border: '1px solid #e5e7eb'
+                        }}>
+                          <div style={{fontSize: '12px', fontWeight: '600', color: '#111827', marginBottom: '5px'}}>
+                            📋 Organizer
+                          </div>
+                          <div style={{fontSize: '14px', color: '#374151'}}>{event.organizer}</div>
+                        </div>
+                      )}
 
                       {/* Sponsorship Info */}
                       {event.sponsorshipEnabled && (
@@ -574,36 +678,47 @@ export default function EventApproval() {
                       </div>
 
                       {/* Action Buttons */}
-                      {activeTab === 'pending' && (
-                        <div style={{display: 'flex', gap: '10px', marginTop: '20px'}}>
-                          <button style={{
-                            background: 'linear-gradient(45deg, #10b981 0%, #059669 100%)',
-                            border: 'none',
-                            color: '#ffffff',
-                            padding: '10px 20px',
-                            borderRadius: '8px',
-                            fontSize: '14px',
-                            fontWeight: '500',
-                            cursor: 'pointer',
-                            flex: 1
-                          }}>
-                            ✅ Approve Event
-                          </button>
-                          <button style={{
+                      <div style={{display: 'flex', gap: '10px', marginTop: '20px', flexWrap: 'wrap'}}>
+                        {activeTab === 'pending' && (
+                          <>
+                            <button 
+                              onClick={() => handleStatusUpdate(event._id, 'approved')}
+                              style={{
+                                background: 'linear-gradient(45deg, #10b981 0%, #059669 100%)',
+                                border: 'none',
+                                color: '#ffffff',
+                                padding: '10px 20px',
+                                borderRadius: '8px',
+                                fontSize: '14px',
+                                fontWeight: '500',
+                                cursor: 'pointer',
+                                flex: 1
+                              }}>
+                              ✅ Approve
+                            </button>
+                            <button 
+                              onClick={() => handleStatusUpdate(event._id, 'rejected')}
+                              style={{
+                                background: 'linear-gradient(45deg, #ef4444 0%, #dc2626 100%)',
+                                border: 'none',
+                                color: '#ffffff',
+                                padding: '10px 20px',
+                                borderRadius: '8px',
+                                fontSize: '14px',
+                                fontWeight: '500',
+                                cursor: 'pointer',
+                                flex: 1
+                              }}>
+                              ❌ Reject
+                            </button>
+                          </>
+                        )}
+                        
+                        {/* Delete button for all events */}
+                        <button 
+                          onClick={() => handleDelete(event._id)}
+                          style={{
                             background: 'linear-gradient(45deg, #ef4444 0%, #dc2626 100%)',
-                            border: 'none',
-                            color: '#ffffff',
-                            padding: '10px 20px',
-                            borderRadius: '8px',
-                            fontSize: '14px',
-                            fontWeight: '500',
-                            cursor: 'pointer',
-                            flex: 1
-                          }}>
-                            ❌ Reject Event
-                          </button>
-                          <button style={{
-                            background: 'linear-gradient(45deg, #6b7280 0%, #4b5563 100%)',
                             border: 'none',
                             color: '#ffffff',
                             padding: '10px 20px',
@@ -612,10 +727,9 @@ export default function EventApproval() {
                             fontWeight: '500',
                             cursor: 'pointer'
                           }}>
-                            📝 Request Changes
-                          </button>
-                        </div>
-                      )}
+                          🗑️ Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -625,45 +739,75 @@ export default function EventApproval() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer style={{
-        background: 'linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 50%, #16213e 100%)',
-        color: '#ffffff',
-        padding: '60px 0 30px',
-        marginTop: '0',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
         <div style={{
-          position: 'absolute',
+          position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-          opacity: 0.1
-        }}></div>
-        
-        <div className="container" style={{position: 'relative', zIndex: 1}}>
-          <div className="row">
-            <div className="col-lg-12">
-              <p style={{
-                color: 'rgba(255, 255, 255, 0.6)',
-                fontSize: '13px',
-                margin: 0,
-                lineHeight: '1.6',
-                textAlign: 'center'
-              }}>
-                © 2026 EventSync – Event Approval Management. All Rights Reserved.
-                <br />
-                <span style={{color: 'rgba(255, 255, 255, 0.4)'}}>
-                  Professional Campus Event Management Platform | Built with ❤️ for SLIIT
-                </span>
-              </p>
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            padding: '30px',
+            maxWidth: '400px',
+            width: '90%'
+          }}>
+            <h3 style={{fontSize: '20px', fontWeight: '600', marginBottom: '15px', color: '#111827'}}>
+              ⚠️ Confirm Deletion
+            </h3>
+            
+            <p style={{color: '#6b7280', marginBottom: '20px', lineHeight: '1.5'}}>
+              Are you sure you want to delete this event? This action cannot be undone and will remove all event data including registrations.
+            </p>
+            
+            <div style={{display: 'flex', gap: '10px'}}>
+              <button
+                onClick={() => handleDelete(showDeleteModal)}
+                style={{
+                  background: 'linear-gradient(45deg, #ef4444 0%, #dc2626 100%)',
+                  border: 'none',
+                  color: '#ffffff',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  flex: 1
+                }}
+              >
+                Delete Event
+              </button>
+              
+              <button
+                onClick={() => setShowDeleteModal(null)}
+                style={{
+                  background: 'linear-gradient(45deg, #6b7280 0%, #4b5563 100%)',
+                  border: 'none',
+                  color: '#ffffff',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  flex: 1
+                }}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
-      </footer>
+      )}
+
+<Footer />
     </>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import Header from './Header';
+import Footer from './Footer';
 
 export default function Events() {
   const [events, setEvents] = useState([]);
@@ -184,6 +185,62 @@ export default function Events() {
               opacity: 0;
             }
           }
+
+          /* Fix event card alignment */
+          .service-item {
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+          }
+          
+          .service-item .right-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+          }
+          
+          .service-item .d-flex.gap-2 {
+            margin-top: auto;
+          }
+          
+          /* Fix button styling */
+          .orange-button {
+            background: linear-gradient(135deg, #ff511a 0%, #ff8c42 100%) !important;
+            border: none !important;
+            color: white !important;
+            padding: 10px 20px !important;
+            border-radius: 25px !important;
+            font-size: 12px !important;
+            font-weight: 500 !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
+            text-decoration: none !important;
+            display: inline-block !important;
+          }
+          
+          .orange-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 81, 26, 0.3);
+          }
+          
+          /* Fix form layout */
+          .form-control {
+            border-radius: 8px !important;
+            border: 1px solid #e5e7eb !important;
+            padding: 12px !important;
+            font-size: 14px !important;
+          }
+          
+          .form-control:focus {
+            border-color: #667eea !important;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25) !important;
+          }
+          
+          .form-label {
+            font-weight: 600 !important;
+            color: #374151 !important;
+            margin-bottom: 8px !important;
+          }
         `}</style>
       </Helmet>
 
@@ -220,9 +277,9 @@ export default function Events() {
               <div className="d-flex justify-content-between align-items-center">
                 <div>
                   <span className="badge bg-primary me-2">Total: {events.length}</span>
-                  <span className="badge bg-success me-2">Approved: {events.filter(e => e.status === 'Approved').length}</span>
-                  <span className="badge bg-warning me-2">Pending: {events.filter(e => e.status === 'Pending').length}</span>
-                  <span className="badge bg-danger">Rejected: {events.filter(e => e.status === 'Rejected').length}</span>
+                  <span className="badge bg-success me-2">Approved: {events.filter(e => e.status === 'approved').length}</span>
+                  <span className="badge bg-warning me-2">Pending: {events.filter(e => e.status === 'pending').length}</span>
+                  <span className="badge bg-danger">Rejected: {events.filter(e => e.status === 'rejected').length}</span>
                 </div>
                 <a href="/create-event" className="orange-button">Create New Event</a>
               </div>
@@ -387,16 +444,16 @@ export default function Events() {
                                 {evt.title}
                               </h4>
                               <span className={`badge ${
-                                evt.status === 'Approved' ? 'bg-success' : 
-                                evt.status === 'Pending' ? 'bg-warning' : 
-                                evt.status === 'Rejected' ? 'bg-danger' : 
-                                evt.status === 'Completed' ? 'bg-info' : 'bg-secondary'
+                                evt.status === 'approved' ? 'bg-success' : 
+                                evt.status === 'pending' ? 'bg-warning' : 
+                                evt.status === 'rejected' ? 'bg-danger' : 
+                                evt.status === 'completed' ? 'bg-info' : 'bg-secondary'
                               }`} style={{
                                 fontSize: '12px',
                                 padding: '6px 12px',
                                 borderRadius: '20px'
                               }}>
-                                {evt.status}
+                                {evt.status ? evt.status.charAt(0).toUpperCase() + evt.status.slice(1) : 'Unknown'}
                               </span>
                             </div>
                             
@@ -420,7 +477,7 @@ export default function Events() {
                                   fontSize: '13px'
                                 }}>
                                   <i className="fas fa-calendar me-2" style={{color: '#667eea'}}></i>
-                                  {new Date(evt.date).toLocaleDateString()}
+                                  {evt.date ? new Date(evt.date).toLocaleDateString() : 'Date TBD'}
                                 </div>
                               </div>
                               <div className="col-sm-6 mb-2">
@@ -431,7 +488,7 @@ export default function Events() {
                                   fontSize: '13px'
                                 }}>
                                   <i className="fas fa-clock me-2" style={{color: '#667eea'}}></i>
-                                  {new Date(evt.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                  {evt.time || 'Time TBD'}
                                 </div>
                               </div>
                             </div>
@@ -445,7 +502,7 @@ export default function Events() {
                                   fontSize: '13px'
                                 }}>
                                   <i className="fas fa-map-marker-alt me-2" style={{color: '#667eea'}}></i>
-                                  {evt.venue || 'TBA'}
+                                  {evt.venue || 'Venue TBD'}
                                 </div>
                               </div>
                               <div className="col-sm-6 mb-2">
@@ -456,7 +513,7 @@ export default function Events() {
                                   fontSize: '13px'
                                 }}>
                                   <i className="fas fa-university me-2" style={{color: '#667eea'}}></i>
-                                  {evt.faculty}
+                                  {evt.faculty || 'Faculty TBD'}
                                 </div>
                               </div>
                             </div>
@@ -470,7 +527,7 @@ export default function Events() {
                                   fontSize: '13px'
                                 }}>
                                   <i className="fas fa-tag me-2" style={{color: '#667eea'}}></i>
-                                  {evt.category}
+                                  {evt.category || 'General'}
                                 </div>
                               </div>
                               <div className="col-sm-4 mb-2">
@@ -481,7 +538,7 @@ export default function Events() {
                                   fontSize: '13px'
                                 }}>
                                   <i className="fas fa-users me-2" style={{color: '#667eea'}}></i>
-                                  {evt.capacity} seats
+                                  {evt.capacity ? `${evt.capacity} seats` : 'Unlimited'}
                                 </div>
                               </div>
                               <div className="col-sm-4 mb-2">
@@ -492,7 +549,7 @@ export default function Events() {
                                   fontSize: '13px'
                                 }}>
                                   <i className="fas fa-user-check me-2" style={{color: '#43ba7f'}}></i>
-                                  {evt.registrationCount || 0} registered
+                                  {evt.registered || 0} registered
                                 </div>
                               </div>
                             </div>
@@ -579,236 +636,7 @@ export default function Events() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer style={{
-        background: 'linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 50%, #16213e 100%)',
-        color: '#ffffff',
-        padding: '60px 0 30px',
-        marginTop: '80px',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-          opacity: 0.1
-        }}></div>
-        
-        <div className="container" style={{position: 'relative', zIndex: 1}}>
-          <div className="row">
-            {/* Company Info */}
-            <div className="col-lg-4 col-md-6 mb-4">
-              <div style={{marginBottom: '20px'}}>
-                <h3 style={{
-                  color: '#ffffff',
-                  fontSize: '28px',
-                  fontWeight: '700',
-                  marginBottom: '15px',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}>
-                  <span style={{
-                    width: '40px',
-                    height: '40px',
-                    background: 'linear-gradient(45deg, #f093fb 0%, #f5576c 100%)',
-                    borderRadius: '10px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: '12px',
-                    fontSize: '20px'
-                  }}>📅</span>
-                  EventSync
-                </h3>
-                <p style={{
-                  color: 'rgba(255, 255, 255, 0.8)',
-                  lineHeight: '1.6',
-                  fontSize: '15px'
-                }}>
-                  Transforming campus event management with smart QR analytics, seamless registration, and comprehensive approval workflows.
-                </p>
-              </div>
-              
-              <div style={{display: 'flex', gap: '12px', marginTop: '25px'}}>
-                {['📧', '📱', '💬', '🌐'].map((icon, index) => (
-                  <div key={index} style={{
-                    width: '40px',
-                    height: '40px',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    fontSize: '18px'
-                  }} onMouseOver={(e) => {
-                    e.target.style.background = 'rgba(255, 255, 255, 0.2)';
-                    e.target.style.transform = 'translateY(-3px)';
-                  }} onMouseOut={(e) => {
-                    e.target.style.background = 'rgba(255, 255, 255, 0.1)';
-                    e.target.style.transform = 'translateY(0)';
-                  }}>
-                    {icon}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Quick Links */}
-            <div className="col-lg-2 col-md-6 mb-4">
-              <h4 style={{
-                color: '#ffffff',
-                fontSize: '18px',
-                fontWeight: '600',
-                marginBottom: '20px',
-                position: 'relative'
-              }}>
-                Quick Links
-                <span style={{
-                  position: 'absolute',
-                  bottom: '-8px',
-                  left: 0,
-                  width: '40px',
-                  height: '3px',
-                  background: 'linear-gradient(45deg, #f093fb 0%, #f5576c 100%)',
-                  borderRadius: '2px'
-                }}></span>
-              </h4>
-              <ul style={{listStyle: 'none', padding: 0}}>
-                {['Create Event', 'Browse Events', 'Dashboard', 'Analytics'].map((link, index) => (
-                  <li key={index} style={{marginBottom: '12px'}}>
-                    <a href="#" style={{
-                      color: 'rgba(255, 255, 255, 0.7)',
-                      textDecoration: 'none',
-                      fontSize: '14px',
-                      transition: 'all 0.3s ease',
-                      display: 'inline-block'
-                    }} onMouseOver={(e) => {
-                      e.target.style.color = '#ffffff';
-                      e.target.style.transform = 'translateX(5px)';
-                    }} onMouseOut={(e) => {
-                      e.target.style.color = 'rgba(255, 255, 255, 0.7)';
-                      e.target.style.transform = 'translateX(0)';
-                    }}>
-                      → {link}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Features */}
-            <div className="col-lg-3 col-md-6 mb-4">
-              <h4 style={{
-                color: '#ffffff',
-                fontSize: '18px',
-                fontWeight: '600',
-                marginBottom: '20px',
-                position: 'relative'
-              }}>
-                Features
-                <span style={{
-                  position: 'absolute',
-                  bottom: '-8px',
-                  left: 0,
-                  width: '40px',
-                  height: '3px',
-                  background: 'linear-gradient(45deg, #f093fb 0%, #f5576c 100%)',
-                  borderRadius: '2px'
-                }}></span>
-              </h4>
-              <ul style={{listStyle: 'none', padding: 0}}>
-                {['QR Check-in System', 'Real-time Analytics', 'Multi-venue Support', 'Sponsorship Management'].map((feature, index) => (
-                  <li key={index} style={{marginBottom: '12px'}}>
-                    <div style={{display: 'flex', alignItems: 'center'}}>
-                      <span style={{
-                        color: '#4ade80',
-                        marginRight: '8px',
-                        fontSize: '12px'
-                      }}>✓</span>
-                      <span style={{
-                        color: 'rgba(255, 255, 255, 0.7)',
-                        fontSize: '14px'
-                      }}>{feature}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Contact Info */}
-            <div className="col-lg-3 col-md-6 mb-4">
-              <h4 style={{
-                color: '#ffffff',
-                fontSize: '18px',
-                fontWeight: '600',
-                marginBottom: '20px',
-                position: 'relative'
-              }}>
-                Contact Info
-                <span style={{
-                  position: 'absolute',
-                  bottom: '-8px',
-                  left: 0,
-                  width: '40px',
-                  height: '3px',
-                  background: 'linear-gradient(45deg, #f093fb 0%, #f5576c 100%)',
-                  borderRadius: '2px'
-                }}></span>
-              </h4>
-              <div style={{color: 'rgba(255, 255, 255, 0.7)', fontSize: '14px', lineHeight: '1.8'}}>
-                <div style={{marginBottom: '12px', display: 'flex', alignItems: 'center'}}>
-                  <span style={{marginRight: '10px'}}>📍</span>
-                  <span>SLIIT Campus, Malabe</span>
-                </div>
-                <div style={{marginBottom: '12px', display: 'flex', alignItems: 'center'}}>
-                  <span style={{marginRight: '10px'}}>📞</span>
-                  <span>+94 11 123 4567</span>
-                </div>
-                <div style={{marginBottom: '12px', display: 'flex', alignItems: 'center'}}>
-                  <span style={{marginRight: '10px'}}>✉️</span>
-                  <span>info@eventsync.sliit.lk</span>
-                </div>
-                <div style={{display: 'flex', alignItems: 'center'}}>
-                  <span style={{marginRight: '10px'}}>🕐</span>
-                  <span>Mon-Fri: 9AM-6PM</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Bar */}
-          <div style={{
-            borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-            marginTop: '40px',
-            paddingTop: '30px',
-            textAlign: 'center'
-          }}>
-            <div className="row">
-              <div className="col-lg-12">
-                <p style={{
-                  color: 'rgba(255, 255, 255, 0.6)',
-                  fontSize: '13px',
-                  margin: 0,
-                  lineHeight: '1.6'
-                }}>
-                  © 2026 EventSync – Campus Event Management & QR Analytics Platform. All Rights Reserved.
-                  <br />
-                  <span style={{color: 'rgba(255, 255, 255, 0.4)'}}>
-                    Developed for SLIIT Academic Project | Designed for Smart Campus Event Operations | 
-                    <span style={{color: '#4ade80'}}> ❤️ </span> Made with passion by SLIIT Students
-                  </span>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
+<Footer />
     </>
   );
 }
@@ -823,7 +651,8 @@ function EventEditForm({ event, onUpdate, onCancel }) {
     venue: event.venue || '',
     capacity: event.capacity || '',
     date: event.date ? new Date(event.date).toISOString().slice(0, 16) : '',
-    status: event.status || 'Pending'
+    time: event.time || '',
+    budget: event.budget || ''
   });
 
   const handleChange = (e) => {
@@ -878,6 +707,64 @@ function EventEditForm({ event, onUpdate, onCancel }) {
       </div>
       
       <div className="row">
+        <div className="col-md-12">
+          <div className="form-group mb-3">
+            <label className="form-label">Description</label>
+            <textarea
+              className="form-control"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              rows="3"
+              required
+            />
+          </div>
+        </div>
+      </div>
+      
+      <div className="row">
+        <div className="col-md-6">
+          <div className="form-group mb-3">
+            <label className="form-label">Date</label>
+            <input
+              type="datetime-local"
+              className="form-control"
+              name="date"
+              value={formData.date}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        </div>
+        <div className="col-md-6">
+          <div className="form-group mb-3">
+            <label className="form-label">Time</label>
+            <input
+              type="text"
+              className="form-control"
+              name="time"
+              value={formData.time}
+              onChange={handleChange}
+              placeholder="e.g., 09:00 AM"
+            />
+          </div>
+        </div>
+      </div>
+      
+      <div className="row">
+        <div className="col-md-6">
+          <div className="form-group mb-3">
+            <label className="form-label">Venue</label>
+            <input
+              type="text"
+              className="form-control"
+              name="venue"
+              value={formData.venue}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        </div>
         <div className="col-md-6">
           <div className="form-group mb-3">
             <label className="form-label">Faculty</label>
@@ -896,18 +783,6 @@ function EventEditForm({ event, onUpdate, onCancel }) {
               <option value="Architecture">Architecture</option>
               <option value="Graduate Studies">Graduate Studies</option>
             </select>
-          </div>
-        </div>
-        <div className="col-md-6">
-          <div className="form-group mb-3">
-            <label className="form-label">Venue</label>
-            <input
-              type="text"
-              className="form-control"
-              name="venue"
-              value={formData.venue}
-              onChange={handleChange}
-            />
           </div>
         </div>
       </div>
@@ -929,56 +804,26 @@ function EventEditForm({ event, onUpdate, onCancel }) {
         </div>
         <div className="col-md-6">
           <div className="form-group mb-3">
-            <label className="form-label">Date & Time</label>
+            <label className="form-label">Budget (Rs.)</label>
             <input
-              type="datetime-local"
+              type="number"
               className="form-control"
-              name="date"
-              value={formData.date}
+              name="budget"
+              value={formData.budget}
               onChange={handleChange}
-              required
+              min="0"
+              step="1000"
             />
           </div>
         </div>
       </div>
       
-      <div className="row">
-        <div className="col-md-6">
-          <div className="form-group mb-3">
-            <label className="form-label">Status</label>
-            <select
-              className="form-control"
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-            >
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-              <option value="Cancelled">Cancelled</option>
-              <option value="Completed">Completed</option>
-            </select>
-          </div>
-        </div>
-      </div>
-      
-      <div className="form-group mb-3">
-        <label className="form-label">Description</label>
-        <textarea
-          className="form-control"
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          rows="3"
-        />
-      </div>
-      
       <div className="d-flex gap-2">
-        <button type="submit" className="btn btn-primary">
-          Update Event
+        <button type="submit" className="orange-button">
+          <i className="fas fa-save me-1"></i> Save Changes
         </button>
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          Cancel
+          <i className="fas fa-times me-1"></i> Cancel
         </button>
       </div>
     </form>
