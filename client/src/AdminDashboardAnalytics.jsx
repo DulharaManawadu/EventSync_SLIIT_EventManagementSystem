@@ -1,727 +1,1282 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { Link } from 'react-router-dom';
 import AdminHeader from './AdminHeader';
 import Footer from './Footer';
 
 export default function AdminDashboardAnalytics() {
-  const [selectedPeriod, setSelectedPeriod] = useState('7d');
+  const [selectedPeriod, setSelectedPeriod] = useState('30d');
   const [activeTab, setActiveTab] = useState('overview');
-  const [animatedNumbers, setAnimatedNumbers] = useState({});
+  const [animatedStats, setAnimatedStats] = useState({});
 
-  // Mock data for event management system
-  const statsData = {
-    overview: [
-      { title: 'Total Events', value: 156, change: '+12%', icon: '📅', color: '#667eea', description: 'Active events across all categories this month' },
-      { title: 'Total Registrations', value: 3428, change: '+18%', icon: '👥', color: '#10b981', description: 'Student registrations for upcoming events' },
-      { title: 'Pending Approvals', value: 23, change: '-5%', icon: '⏳', color: '#f59e0b', description: 'Events awaiting admin approval' },
-      { title: 'Revenue Generated', value: 125000, change: '+25%', icon: '💰', color: '#ef4444', description: 'Total revenue from sponsorship and registrations' },
-      { title: 'QR Check-ins', value: 2847, change: '+32%', icon: '📱', color: '#8b5cf6', description: 'Successful QR code check-ins this month' },
-      { title: 'Active Sponsors', value: 47, change: '+8%', icon: '🤝', color: '#06b6d4', description: 'Sponsors supporting current events' }
-    ]
-  };
+  const statsData = useMemo(
+    () => [
+      {
+        key: 'events',
+        title: 'Total Events',
+        value: 156,
+        change: '+12.4%',
+        positive: true,
+        description: 'Published and active events across all categories',
+        accent: '#4f46e5',
+      },
+      {
+        key: 'registrations',
+        title: 'Registrations',
+        value: 3428,
+        change: '+18.2%',
+        positive: true,
+        description: 'Students registered for current and upcoming events',
+        accent: '#059669',
+      },
+      {
+        key: 'approvals',
+        title: 'Pending Approvals',
+        value: 23,
+        change: '-5.1%',
+        positive: false,
+        description: 'Events waiting for admin review and approval',
+        accent: '#d97706',
+      },
+      {
+        key: 'revenue',
+        title: 'Revenue',
+        value: 125000,
+        change: '+25.6%',
+        positive: true,
+        description: 'Sponsorship and registration revenue generated',
+        accent: '#dc2626',
+        prefix: '$',
+      },
+    ],
+    []
+  );
 
-  const metricsData = [
-    { value: '89%', label: 'Event Capacity', change: '+5%', color: '#667eea' },
-    { value: '4.8', label: 'Avg Rating', change: '+0.3', color: '#10b981' },
-    { value: '92%', label: 'Attendance Rate', change: '+8%', color: '#f59e0b' },
-    { value: '24h', label: 'Avg Approval Time', change: '-2h', color: '#ef4444' }
+  const secondaryMetrics = [
+    { label: 'Attendance Rate', value: '92%', hint: 'Above target', positive: true },
+    { label: 'Avg Approval Time', value: '18h', hint: '2h faster', positive: true },
+    { label: 'QR Check-ins', value: '2,847', hint: 'Strong scan completion', positive: true },
+    { label: 'Active Sponsors', value: '47', hint: '6 new this month', positive: true },
   ];
 
-  const eventData = [
-    { month: 'Jan', events: 12, attendance: 245, revenue: 45000, growth: '+8%' },
-    { month: 'Feb', events: 18, attendance: 389, revenue: 67000, growth: '+15%' },
-    { month: 'Mar', events: 22, attendance: 478, revenue: 89000, growth: '+22%' },
-    { month: 'Apr', events: 15, attendance: 312, revenue: 54000, growth: '+5%' },
-    { month: 'May', events: 28, attendance: 567, revenue: 112000, growth: '+35%' },
-    { month: 'Jun', events: 32, attendance: 689, revenue: 134000, growth: '+42%' }
+  const monthlyData = [
+    { month: 'Jan', events: 12, registrations: 245, revenue: 45000 },
+    { month: 'Feb', events: 18, registrations: 389, revenue: 67000 },
+    { month: 'Mar', events: 22, registrations: 478, revenue: 89000 },
+    { month: 'Apr', events: 15, registrations: 312, revenue: 54000 },
+    { month: 'May', events: 28, registrations: 567, revenue: 112000 },
+    { month: 'Jun', events: 32, registrations: 689, revenue: 134000 },
   ];
 
   const categoryData = [
-    { name: 'Technical', value: 35, color: '#667eea', icon: 'T', growth: '+15%', events: 89 },
-    { name: 'Cultural', value: 28, color: '#10b981', icon: 'C', growth: '+8%', events: 67 },
-    { name: 'Sports', value: 22, color: '#f59e0b', icon: 'S', growth: '+22%', events: 45 },
-    { name: 'Workshop', value: 15, color: '#ef4444', icon: 'W', growth: '+12%', events: 28 }
+    { name: 'Technical', events: 89, percent: 35, color: '#4f46e5' },
+    { name: 'Cultural', events: 67, percent: 28, color: '#10b981' },
+    { name: 'Sports', events: 45, percent: 22, color: '#f59e0b' },
+    { name: 'Workshops', events: 28, percent: 15, color: '#ef4444' },
   ];
 
-  // Animate numbers on mount
+  const recentActivity = [
+    { title: 'Tech Summit 2025 approved', meta: '2 minutes ago • Event Management', status: 'approved' },
+    { title: 'Cultural Fest reached 95% capacity', meta: '14 minutes ago • Alerts', status: 'info' },
+    { title: 'New sponsor confirmed for Robotics Expo', meta: '35 minutes ago • Sponsorship', status: 'success' },
+    { title: 'QR check-in sync completed for Sports Meet', meta: '1 hour ago • System', status: 'neutral' },
+    { title: '2 vendor applications require review', meta: '2 hours ago • Vendor Management', status: 'warning' },
+  ];
+
+  const approvalQueue = [
+    { name: 'AI Innovation Summit', organizer: 'Computer Science Club', date: '12 May 2025', venue: 'Main Auditorium', status: 'High Priority' },
+    { name: 'Spring Cultural Night', organizer: 'Arts Society', date: '14 May 2025', venue: 'Open Grounds', status: 'Review Needed' },
+    { name: 'Intercollege Football Cup', organizer: 'Sports Council', date: '18 May 2025', venue: 'Sports Arena', status: 'Pending Budget' },
+    { name: 'Startup Networking Forum', organizer: 'Entrepreneurship Cell', date: '21 May 2025', venue: 'Seminar Hall', status: 'Ready' },
+  ];
+
+  const topPerformingEvents = [
+    { name: 'Robotics Expo', registrations: 420, revenue: '$18,500', fillRate: '98%' },
+    { name: 'Hackathon X', registrations: 389, revenue: '$14,200', fillRate: '94%' },
+    { name: 'Leadership Summit', registrations: 301, revenue: '$12,900', fillRate: '90%' },
+    { name: 'Design Workshop', registrations: 246, revenue: '$8,750', fillRate: '87%' },
+  ];
+
   useEffect(() => {
-    const animateValue = (id, start, end, duration) => {
-      const element = document.getElementById(id);
-      if (!element) return;
-      
-      let startTimestamp = null;
-      const step = (timestamp) => {
-        if (!startTimestamp) startTimestamp = timestamp;
-        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-        const value = Math.floor(progress * (end - start) + start);
-        element.textContent = value.toLocaleString();
-        if (progress < 1) {
-          window.requestAnimationFrame(step);
-        }
-      };
-      window.requestAnimationFrame(step);
+    const duration = 1200;
+    const start = performance.now();
+
+    const step = (now) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const next = {};
+
+      statsData.forEach((stat) => {
+        next[stat.key] = Math.floor(progress * stat.value);
+      });
+
+      setAnimatedStats(next);
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      }
     };
 
-    // Animate stats
-    statsData.overview.forEach((stat, index) => {
-      setTimeout(() => {
-        animateValue(`stat-${index}`, 0, stat.value, 2000);
-      }, index * 200);
-    });
-  }, []);
+    requestAnimationFrame(step);
+  }, [statsData]);
 
-  const formatValue = (value, title) => {
-    if (title === 'Total Revenue') {
-      return `$${(value / 1000).toFixed(1)}K`;
-    } else if (title === 'Active Users') {
-      return `${(value / 1000).toFixed(1)}K`;
-    } else if (title === 'Conversion Rate' || title === 'System Uptime') {
-      return `${value}%`;
-    } else if (title === 'Monthly Growth') {
-      return `+${value}%`;
-    } else {
-      return value.toLocaleString();
+  const formatNumber = (value, prefix = '') => {
+    if (prefix === '$') {
+      return `${prefix}${value.toLocaleString()}`;
     }
+    return value.toLocaleString();
+  };
+
+  const maxEvents = Math.max(...monthlyData.map((item) => item.events));
+  const totalEvents = categoryData.reduce((sum, item) => sum + item.events, 0);
+
+  const tabs = [
+    { key: 'overview', label: 'Overview' },
+    { key: 'events', label: 'Events' },
+    { key: 'users', label: 'Users' },
+    { key: 'sponsorship', label: 'Sponsorship' },
+    { key: 'qr', label: 'QR Analytics' },
+    { key: 'performance', label: 'Performance' },
+  ];
+
+  const renderStatusDot = (status) => {
+    const colors = {
+      approved: '#10b981',
+      success: '#10b981',
+      info: '#4f46e5',
+      neutral: '#64748b',
+      warning: '#f59e0b',
+    };
+
+    return (
+      <span
+        style={{
+          width: 10,
+          height: 10,
+          borderRadius: '50%',
+          display: 'inline-block',
+          background: colors[status] || '#64748b',
+          flexShrink: 0,
+        }}
+      />
+    );
   };
 
   return (
     <>
       <Helmet>
-        <title>Admin Dashboard - EventSync Analytics</title>
+        <title>Admin Analytics Dashboard - EventSync</title>
       </Helmet>
 
       <AdminHeader />
 
-      {/* Page Heading Section - Dark Blue Theme */}
-      <section className="page-heading" style={{
-        background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #2563eb 100%)',
-        position: 'relative',
-        overflow: 'hidden',
-        padding: '190px 0 80px',
-        marginBottom: '0',
-        marginTop: '70px'
-      }}>
-        {/* Animated Background Elements */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-          opacity: 0.1
-        }}></div>
-        
-        {/* Geometric Shapes */}
-        <div style={{
-          position: 'absolute',
-          top: '10%',
-          left: '5%',
-          width: '100px',
-          height: '100px',
-          background: 'rgba(255, 255, 255, 0.1)',
-          borderRadius: '50%',
-          animation: 'float 6s ease-in-out infinite'
-        }}></div>
-        <div style={{
-          position: 'absolute',
-          top: '20%',
-          right: '10%',
-          width: '60px',
-          height: '60px',
-          background: 'rgba(255, 255, 255, 0.08)',
-          borderRadius: '50%',
-          animation: 'float 8s ease-in-out infinite 2s'
-        }}></div>
-        <div style={{
-          position: 'absolute',
-          bottom: '20%',
-          left: '15%',
-          width: '80px',
-          height: '80px',
-          background: 'rgba(255, 255, 255, 0.06)',
-          borderRadius: '50%',
-          animation: 'float 7s ease-in-out infinite 1s'
-        }}></div>
-        
-        <div className="container" style={{position: 'relative', zIndex: 1}}>
-          <div className="row">
-            <div className="col-lg-12">
-              <div className="header-text">
-                <h2>
-                  Data Analytics <em>Dashboard</em>
-                </h2>
-                <div className="div-dec"></div>
-                <p>
-                  Transform your data into actionable insights with our cutting-edge analytics platform. 
-                  Real-time monitoring, intelligent predictions, and beautiful visualizations for campus event management.
-                </p>
-                <div className="buttons" style={{display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap'}}>
-                  <select 
-                    value={selectedPeriod}
-                    onChange={(e) => setSelectedPeriod(e.target.value)}
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.15)',
-                      border: '2px solid rgba(255, 255, 255, 0.3)',
-                      color: '#ffffff',
-                      padding: '12px 20px',
-                      borderRadius: '25px',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      backdropFilter: 'blur(10px)',
-                      minWidth: '180px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <option value="7d">Last 7 Days</option>
-                    <option value="30d">Last 30 Days</option>
-                    <option value="90d">Last 90 Days</option>
-                    <option value="1y">Last Year</option>
-                  </select>
-                  
-                  <div className="orange-button" style={{margin: '0'}}>
-                    <a href="#export">📊 Export Report</a>
-                  </div>
-                  <div className="green-button" style={{margin: '0'}}>
-                    <a href="#refresh">🔄 Refresh Data</a>
-                  </div>
+      <div className="admin-dashboard-page">
+        <section className="dashboard-shell">
+          <div className="dashboard-header">
+            <div>
+              <span className="eyebrow">Admin Analytics</span>
+              <h1>Event management command center</h1>
+              <p>
+                Monitor operations, approvals, registrations, sponsorship revenue,
+                and event performance from one professional dashboard.
+              </p>
+            </div>
+
+            <div className="header-actions">
+              <select
+                value={selectedPeriod}
+                onChange={(e) => setSelectedPeriod(e.target.value)}
+                className="period-select"
+              >
+                <option value="7d">Last 7 Days</option>
+                <option value="30d">Last 30 Days</option>
+                <option value="90d">Last 90 Days</option>
+                <option value="1y">Last 12 Months</option>
+              </select>
+
+              <button className="btn btn-light">Refresh</button>
+              <button className="btn btn-primary">Export Report</button>
+            </div>
+          </div>
+
+          <div className="hero-summary">
+            <div className="hero-card hero-card-primary">
+              <div className="hero-card-top">
+                <span className="hero-badge">Live overview</span>
+                <span className="hero-badge subtle">Updated just now</span>
+              </div>
+
+              <h2>Operations are stable and event growth is trending upward.</h2>
+
+              <p>
+                Registrations, sponsorship revenue, and attendance performance are
+                all improving this month. Approval turnaround time has also improved.
+              </p>
+
+              <div className="hero-mini-stats">
+                <div>
+                  <strong>+18.2%</strong>
+                  <span>Registration growth</span>
+                </div>
+                <div>
+                  <strong>92%</strong>
+                  <span>Attendance rate</span>
+                </div>
+                <div>
+                  <strong>18h</strong>
+                  <span>Avg approval time</span>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Navigation Tabs */}
-      <div style={{
-        background: '#1e3a8a',
-        borderBottom: '3px solid #1e40af',
-        position: 'sticky',
-        top: '0',
-        zIndex: 100,
-        boxShadow: '0 4px 20px rgba(30, 58, 138, 0.3)',
-        backdropFilter: 'blur(10px)'
-      }}>
-        <div className="container">
-          <div className="row">
-            <div className="col-lg-12">
-              <div style={{display: 'flex', gap: '0', overflowX: 'auto', padding: '15px 0'}}>
-                {[
-                  { key: 'overview', label: 'Dashboard', desc: 'Main Dashboard', color: '#667eea' },
-                  { key: 'events', label: 'Events', desc: 'Event Analytics', color: '#10b981' },
-                  { key: 'users', label: 'Users', desc: 'User Insights', color: '#f59e0b' },
-                  { key: 'sponsorship', label: 'Sponsorship', desc: 'Revenue Tracking', color: '#ef4444' },
-                  { key: 'qr', label: 'QR Analytics', desc: 'Check-in Data', color: '#8b5cf6' },
-                  { key: 'performance', label: 'Performance', desc: 'System Metrics', color: '#06b6d4' }
-                ].map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
-                    style={{
-                      background: activeTab === tab.key ? `linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)` : 'transparent',
-                      color: activeTab === tab.key ? '#ffffff' : '#cbd5e1',
-                      border: 'none',
-                      padding: '20px 30px',
-                      fontSize: '15px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      borderBottom: activeTab === tab.key ? `4px solid #60a5fa` : '4px solid transparent',
-                      textTransform: 'capitalize',
-                      whiteSpace: 'nowrap',
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      position: 'relative',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      borderRadius: activeTab === tab.key ? '15px 15px 0 0' : '0',
-                      margin: '0 5px'
-                    }}
-                    onMouseOver={(e) => {
-                      if (!activeTab.includes(tab.key)) {
-                        e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)';
-                        e.currentTarget.style.color = '#ffffff';
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                      }
-                    }}
-                    onMouseOut={(e) => {
-                      if (!activeTab.includes(tab.key)) {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.color = '#cbd5e1';
-                        e.currentTarget.style.transform = 'translateY(0)';
-                      }
-                    }}
-                  >
-                    <span style={{fontSize: '20px'}}>{tab.label}</span>
-                    <div style={{textAlign: 'left'}}>
-                      <div style={{fontSize: '16px', fontWeight: '700'}}>{tab.label}</div>
-                      <div style={{fontSize: '12px', opacity: 0.8, fontWeight: '400'}}>{tab.desc}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+            <div className="hero-side-grid">
+              {secondaryMetrics.map((item, index) => (
+                <div className="mini-stat-card" key={index}>
+                  <span className="mini-label">{item.label}</span>
+                  <strong>{item.value}</strong>
+                  <small className={item.positive ? 'text-success' : 'text-danger'}>
+                    {item.hint}
+                  </small>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Main Content */}
-      <section style={{
-        background: '#ffffff',
-        paddingTop: '0',
-        paddingBottom: '60px',
-        marginTop: '0',
-        position: 'relative'
-      }}>
-        <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '20px',
-        position: 'relative'
-      }}>
-          
-          {/* Overview Tab */}
+          <div className="tabs-bar">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                className={`tab-btn ${activeTab === tab.key ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab.key)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
           {activeTab === 'overview' && (
             <>
-              {/* Stats Grid - Custom Layout without Bootstrap */}
-              <div style={{marginBottom: '60px', marginTop: '20px'}}>
-                <h2 style={{
-                  fontSize: '36px',
-                  fontWeight: '700',
-                  color: '#1f2937',
-                  marginBottom: '40px',
-                  textAlign: 'center'
-                }}>
-                  Dashboard Overview
-                </h2>
-                
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-                  gap: '30px',
-                  margin: '0 auto',
-                  maxWidth: '1200px'
-                }}>
-                  {statsData.overview.map((stat, index) => (
-                    <div key={index} style={{
-                      background: '#ffffff',
-                      borderRadius: '20px',
-                      padding: '30px',
-                      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
-                      border: '1px solid rgba(0, 0, 0, 0.05)',
-                      transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                      cursor: 'pointer',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      height: '100%'
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-10px) scale(1.02)';
-                      e.currentTarget.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.15)';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                      e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.1)';
-                    }}>
-                      {/* Background decoration */}
-                      <div style={{
-                        position: 'absolute',
-                        top: '-50%',
-                        right: '-50%',
-                        width: '200%',
-                        height: '200%',
-                        background: `linear-gradient(45deg, ${stat.color}08 0%, transparent 70%)`,
-                        borderRadius: '50%',
-                        transform: 'rotate(45deg)'
-                      }}></div>
-                      
-                      <div style={{position: 'relative', zIndex: 1}}>
-                        {/* Stat Header */}
-                        <div style={{display: 'flex', alignItems: 'center', marginBottom: '20px'}}>
-                          <div style={{
-                            width: '60px',
-                            height: '60px',
-                            background: `linear-gradient(135deg, ${stat.color} 0%, ${stat.color}cc 100%)`,
-                            borderRadius: '15px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '28px',
-                            marginRight: '15px',
-                            boxShadow: `0 8px 20px ${stat.color}30`,
-                            animation: 'pulse 2s infinite'
-                          }}>
-                            {stat.icon}
-                          </div>
-                          <div>
-                            <h4 style={{color: '#6b7280', fontSize: '16px', fontWeight: '600', marginBottom: '5px'}}>{stat.title}</h4>
-                            <div style={{
-                              background: stat.change.startsWith('+') ? '#10b98115' : '#ef444415',
-                              color: stat.change.startsWith('+') ? '#10b981' : '#ef4444',
-                              padding: '4px 12px',
-                              borderRadius: '20px',
-                              fontSize: '12px',
-                              fontWeight: '600',
-                              display: 'inline-block'
-                            }}>
-                              {stat.change}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Stat Value */}
-                        <div style={{fontSize: '48px', fontWeight: '800', color: '#1f2937', marginBottom: '15px'}} id={`stat-${index}`}>
-                          {formatValue(stat.value, stat.title)}
-                        </div>
-                        
-                        {/* Stat Description */}
-                        <div style={{fontSize: '14px', color: '#6b7280', lineHeight: '1.6', marginBottom: '20px'}}>
-                          {stat.description}
-                        </div>
-                        
-                        {/* Mini Chart */}
-                        <div style={{height: '80px', background: '#f9fafb', borderRadius: '12px', position: 'relative', overflow: 'hidden'}}>
-                          <svg width="100%" height="100%" style={{position: 'absolute'}}>
-                            <defs>
-                              <linearGradient id={`gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor={stat.color} stopOpacity="0.8"/>
-                                <stop offset="100%" stopColor={stat.color} stopOpacity="0.2"/>
-                              </linearGradient>
-                            </defs>
-                              <polyline
-                                points="10,60 30,35 50,45 70,25 90,40 110,20 130,35 150,15 170,30 190,20"
-                                fill="none"
-                                stroke={`url(#gradient-${index})`}
-                                strokeWidth="3"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <polyline
-                                points="10,60 30,35 50,45 70,25 90,40 110,20 130,35 150,15 170,30 190,20 190,80 10,80"
-                                fill={`${stat.color}15`}
-                              />
-                            </svg>
-                          </div>
-                        </div>
+              <div className="stats-grid">
+                {statsData.map((stat) => (
+                  <div className="stat-card" key={stat.key}>
+                    <div className="stat-card-top">
+                      <div
+                        className="stat-icon"
+                        style={{ background: `${stat.accent}15`, color: stat.accent }}
+                      >
+                        {stat.key === 'events' && '📅'}
+                        {stat.key === 'registrations' && '👥'}
+                        {stat.key === 'approvals' && '⏳'}
+                        {stat.key === 'revenue' && '💳'}
                       </div>
-                    
-                  ))}
-                </div>
+
+                      <span className={`change-badge ${stat.positive ? 'up' : 'down'}`}>
+                        {stat.change}
+                      </span>
+                    </div>
+
+                    <div className="stat-title">{stat.title}</div>
+                    <div className="stat-value">
+                      {formatNumber(animatedStats[stat.key] || 0, stat.prefix)}
+                    </div>
+                    <p className="stat-description">{stat.description}</p>
+
+                    <div className="sparkline">
+                      <svg viewBox="0 0 180 60" preserveAspectRatio="none">
+                        <defs>
+                          <linearGradient id={`grad-${stat.key}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor={stat.accent} stopOpacity="0.85" />
+                            <stop offset="100%" stopColor={stat.accent} stopOpacity="0.2" />
+                          </linearGradient>
+                        </defs>
+                        <polyline
+                          fill="none"
+                          stroke={`url(#grad-${stat.key})`}
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          points="0,46 20,38 40,42 60,28 80,34 100,18 120,24 140,14 160,20 180,10"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              {/* Key Metrics Overview */}
-              <div style={{marginBottom: '60px'}}>
-                <h2 style={{
-                  fontSize: '36px',
-                  fontWeight: '700',
-                  color: '#1f2937',
-                  marginBottom: '40px',
-                  textAlign: 'center'
-                }}>
-                  Advanced Analytics
-                </h2>
-                
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                  gap: '30px',
-                  marginBottom: '60px'
-                }}>
-                  {metricsData.map((metric, index) => (
-                    <div key={index} style={{
-                      background: '#ffffff',
-                      borderRadius: '15px',
-                      padding: '30px',
-                      textAlign: 'center',
-                      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
-                      border: '1px solid rgba(0, 0, 0, 0.05)',
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-5px)';
-                      e.currentTarget.style.boxShadow = '0 15px 35px rgba(0, 0, 0, 0.15)';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.1)';
-                    }}>
-                      <div style={{fontSize: '42px', fontWeight: '800', color: metric.color, marginBottom: '10px'}}>
-                        {metric.value}
-                      </div>
-                      <div style={{fontSize: '16px', fontWeight: '600', color: '#6b7280', marginBottom: '10px'}}>
-                        {metric.label}
-                      </div>
-                      <div style={{
-                        background: metric.change.startsWith('+') ? '#10b98115' : '#ef444415',
-                        color: metric.change.startsWith('+') ? '#10b981' : '#ef4444',
-                        padding: '4px 12px',
-                        borderRadius: '20px',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        display: 'inline-block'
-                      }}>
-                        {metric.change}
-                      </div>
+              <div className="content-grid">
+                <div className="panel panel-large">
+                  <div className="panel-header">
+                    <div>
+                      <h3>Monthly event performance</h3>
+                      <p>Event creation trend over the selected reporting window</p>
                     </div>
-                  ))}
-                </div>
-              </div>
+                    <button className="panel-link">View details</button>
+                  </div>
 
-              {/* Charts Section */}
-              <div className="row">
-                <div className="col-lg-8">
-                  <div style={{
-                    background: '#ffffff',
-                    borderRadius: '20px',
-                    padding: '40px',
-                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
-                    border: '1px solid rgba(0, 0, 0, 0.05)'
-                  }}>
-                    <h4 style={{fontSize: '24px', fontWeight: '700', color: '#1f2937', marginBottom: '30px'}}>
-                      Event Trends & Performance
-                    </h4>
-                    
-                    <div style={{height: '350px', position: 'relative'}}>
-                      {/* Bar Chart */}
-                      <div style={{display: 'flex', alignItems: 'flex-end', height: '300px', gap: '20px', padding: '20px 0'}}>
-                        {eventData.map((item, index) => (
-                          <div key={index} style={{flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-                            <div style={{width: '100%', background: '#f3f4f6', borderRadius: '15px', position: 'relative', height: '250px'}}>
-                              <div style={{
-                                position: 'absolute',
-                                bottom: '0',
-                                width: '100%',
-                                background: `linear-gradient(135deg, #667eea 0%, #764ba2 100%)`,
-                                borderRadius: '15px',
-                                height: `${(item.events / 32) * 100}%`,
-                                transition: 'all 0.3s ease',
-                                cursor: 'pointer',
-                                boxShadow: '0 8px 20px rgba(102, 126, 234, 0.3)'
-                              }}
-                              onMouseOver={(e) => {
-                                e.currentTarget.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                                e.currentTarget.style.transform = 'scale(1.05)';
-                              }}
-                              onMouseOut={(e) => {
-                                e.currentTarget.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                                e.currentTarget.style.transform = 'scale(1)';
-                              }}>
-                                <div style={{
-                                  position: 'absolute',
-                                  top: '-35px',
-                                  left: '50%',
-                                  transform: 'translateX(-50%)',
-                                  background: '#1f2937',
-                                  color: '#ffffff',
-                                  padding: '6px 12px',
-                                  borderRadius: '8px',
-                                  fontSize: '12px',
-                                  fontWeight: '600',
-                                  opacity: 0,
-                                  transition: 'opacity 0.3s ease',
-                                  whiteSpace: 'nowrap',
-                                  boxShadow: '0 6px 20px rgba(0, 0, 0, 0.2)'
-                                }}
-                                onMouseOver={(e) => e.currentTarget.style.opacity = '1'}
-                                onMouseOut={(e) => e.currentTarget.style.opacity = '0'}>
-                                  {item.events} events
-                                </div>
-                              </div>
-                            </div>
-                            <div style={{marginTop: '20px', textAlign: 'center'}}>
-                              <div style={{fontSize: '14px', color: '#6b7280', marginBottom: '5px', fontWeight: '600'}}>{item.month}</div>
-                              <div style={{fontSize: '18px', fontWeight: '700', color: '#1f2937', marginBottom: '5px'}}>{item.events}</div>
-                              <div style={{
-                                fontSize: '12px',
-                                color: '#10b981',
-                                fontWeight: '600',
-                                background: '#10b98110',
-                                padding: '3px 10px',
-                                borderRadius: '12px',
-                                display: 'inline-block'
-                              }}>
-                                {item.growth}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                  <div className="bar-chart">
+                    {monthlyData.map((item) => (
+                      <div className="bar-item" key={item.month}>
+                        <div className="bar-track">
+                          <div
+                            className="bar-fill"
+                            style={{ height: `${(item.events / maxEvents) * 100}%` }}
+                            title={`${item.events} events`}
+                          />
+                        </div>
+                        <div className="bar-meta">
+                          <span className="bar-month">{item.month}</span>
+                          <strong>{item.events}</strong>
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
 
-                <div className="col-lg-4">
-                  <div style={{
-                    background: '#ffffff',
-                    borderRadius: '20px',
-                    padding: '40px',
-                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
-                    border: '1px solid rgba(0, 0, 0, 0.05)'
-                  }}>
-                    <h4 style={{fontSize: '24px', fontWeight: '700', color: '#1f2937', marginBottom: '30px'}}>
-                      Event Categories
-                    </h4>
-                    <div style={{height: '300px'}}>
-                      {/* Pie Chart */}
-                      <div style={{width: '200px', height: '200px', margin: '0 auto', position: 'relative'}}>
-                        <svg width="200" height="200" viewBox="0 0 200 200">
-                          {categoryData.map((item, index) => {
-                            const percentage = item.value / 100;
-                            const startAngle = index === 0 ? 0 : categoryData.slice(0, index).reduce((sum, cat) => sum + cat.value, 0) / 100 * 360;
-                            const endAngle = startAngle + (percentage * 360);
-                            const x1 = 100 + 80 * Math.cos((startAngle - 90) * Math.PI / 180);
-                            const y1 = 100 + 80 * Math.sin((startAngle - 90) * Math.PI / 180);
-                            const x2 = 100 + 80 * Math.cos((endAngle - 90) * Math.PI / 180);
-                            const y2 = 100 + 80 * Math.sin((endAngle - 90) * Math.PI / 180);
-                            const largeArc = percentage > 0.5 ? 1 : 0;
-                            
-                            return (
-                              <g key={index}>
-                                <path
-                                  d={`M 100 100 L ${x1} ${y1} A 80 80 0 ${largeArc} 1 ${x2} ${y2} Z`}
-                                  fill={item.color}
-                                  stroke="#ffffff"
-                                  strokeWidth="3"
-                                  style={{cursor: 'pointer', transition: 'all 0.3s ease'}}
-                                  onMouseOver={(e) => {
-                                    e.currentTarget.style.filter = 'brightness(1.1)';
-                                    e.currentTarget.style.transform = 'scale(1.05)';
-                                  }}
-                                  onMouseOut={(e) => {
-                                    e.currentTarget.style.filter = 'brightness(1)';
-                                    e.currentTarget.style.transform = 'scale(1)';
-                                  }}
-                                />
-                                <text
-                                  x={100 + 50 * Math.cos(((startAngle + endAngle) / 2 - 90) * Math.PI / 180)}
-                                  y={100 + 50 * Math.sin(((startAngle + endAngle) / 2 - 90) * Math.PI / 180)}
-                                  fill="#ffffff"
-                                  fontSize="14"
-                                  fontWeight="600"
-                                  textAnchor="middle"
-                                  dominantBaseline="middle"
-                                >
-                                  {item.value}%
-                                </text>
-                              </g>
-                            );
-                          })}
-                        </svg>
-                      </div>
-                      <div style={{marginTop: '30px'}}>
-                        {categoryData.map((item, index) => (
-                          <div key={index} style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            marginBottom: '15px',
-                            padding: '10px',
-                            background: '#f9fafb',
-                            borderRadius: '10px',
-                            transition: 'all 0.3s ease'
-                          }}
-                          onMouseOver={(e) => {
-                            e.currentTarget.style.background = '#ffffff';
-                            e.currentTarget.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.1)';
-                          }}
-                          onMouseOut={(e) => {
-                            e.currentTarget.style.background = '#f9fafb';
-                            e.currentTarget.style.boxShadow = 'none';
-                          }}>
-                            <div style={{
-                              width: '40px',
-                              height: '40px',
+                <div className="panel">
+                  <div className="panel-header">
+                    <div>
+                      <h3>Event categories</h3>
+                      <p>Category contribution across all active events</p>
+                    </div>
+                  </div>
+
+                  <div className="category-list">
+                    {categoryData.map((item) => (
+                      <div className="category-row" key={item.name}>
+                        <div className="category-top">
+                          <div className="category-name-wrap">
+                            <span
+                              className="category-dot"
+                              style={{ background: item.color }}
+                            />
+                            <span className="category-name">{item.name}</span>
+                          </div>
+                          <span className="category-percent">{item.percent}%</span>
+                        </div>
+
+                        <div className="progress-track">
+                          <div
+                            className="progress-fill"
+                            style={{
+                              width: `${item.percent}%`,
                               background: item.color,
-                              borderRadius: '10px',
-                              marginRight: '15px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '18px',
-                              fontWeight: 'bold',
-                              color: '#ffffff',
-                              flexShrink: 0
-                            }}>
-                              {item.icon}
-                            </div>
-                            <div style={{flex: 1}}>
-                              <div style={{fontSize: '14px', fontWeight: '600', color: '#1f2937', marginBottom: '2px'}}>{item.name}</div>
-                              <div style={{fontSize: '12px', color: '#6b7280'}}>{item.events} events</div>
-                            </div>
-                            <div style={{
-                              background: '#10b98115',
-                              color: '#10b981',
-                              padding: '3px 8px',
-                              borderRadius: '12px',
-                              fontSize: '11px',
-                              fontWeight: '600'
-                            }}>
-                              {item.growth}
-                            </div>
-                          </div>
-                        ))}
+                            }}
+                          />
+                        </div>
+
+                        <div className="category-footer">
+                          <span>{item.events} events</span>
+                          <span>{Math.round((item.events / totalEvents) * 100)}% share</span>
+                        </div>
                       </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="content-grid lower-grid">
+                <div className="panel panel-large">
+                  <div className="panel-header">
+                    <div>
+                      <h3>Approval queue</h3>
+                      <p>Events currently waiting for admin action</p>
+                    </div>
+                    <button className="panel-link">Manage approvals</button>
+                  </div>
+
+                  <div className="table-wrap">
+                    <table className="dashboard-table">
+                      <thead>
+                        <tr>
+                          <th>Event</th>
+                          <th>Organizer</th>
+                          <th>Date</th>
+                          <th>Venue</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {approvalQueue.map((item, index) => (
+                          <tr key={index}>
+                            <td>{item.name}</td>
+                            <td>{item.organizer}</td>
+                            <td>{item.date}</td>
+                            <td>{item.venue}</td>
+                            <td>
+                              <span className="table-status">{item.status}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="side-stack">
+                  <div className="panel">
+                    <div className="panel-header">
+                      <div>
+                        <h3>Recent activity</h3>
+                        <p>Latest platform activity across modules</p>
+                      </div>
+                    </div>
+
+                    <div className="activity-list">
+                      {recentActivity.map((item, index) => (
+                        <div className="activity-item" key={index}>
+                          {renderStatusDot(item.status)}
+                          <div>
+                            <strong>{item.title}</strong>
+                            <span>{item.meta}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="panel">
+                    <div className="panel-header">
+                      <div>
+                        <h3>Top performing events</h3>
+                        <p>Highest engagement and revenue this period</p>
+                      </div>
+                    </div>
+
+                    <div className="performers-list">
+                      {topPerformingEvents.map((item, index) => (
+                        <div className="performer-row" key={index}>
+                          <div>
+                            <strong>{item.name}</strong>
+                            <span>{item.registrations} registrations</span>
+                          </div>
+                          <div className="performer-right">
+                            <strong>{item.revenue}</strong>
+                            <span>{item.fillRate} full</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
+              </div>
+
+              <div className="quick-actions">
+                <button className="quick-action-card">
+                  <span>➕</span>
+                  <div>
+                    <strong>Create Event</strong>
+                    <small>Add a new event to the platform</small>
+                  </div>
+                </button>
+
+                <button className="quick-action-card">
+                  <span>✅</span>
+                  <div>
+                    <strong>Review Approvals</strong>
+                    <small>Check pending event requests</small>
+                  </div>
+                </button>
+
+                <button className="quick-action-card">
+                  <span>📢</span>
+                  <div>
+                    <strong>Manage Sponsors</strong>
+                    <small>Track sponsor performance and payments</small>
+                  </div>
+                </button>
+
+                <button className="quick-action-card">
+                  <span>📥</span>
+                  <div>
+                    <strong>Export Analytics</strong>
+                    <small>Download dashboard data and reports</small>
+                  </div>
+                </button>
               </div>
             </>
           )}
-        </div>
-      
-      </section>
 
-
+          {activeTab !== 'overview' && (
+            <div className="panel empty-state">
+              <h3>{tabs.find((t) => t.key === activeTab)?.label}</h3>
+              <p>
+                This section is ready for expansion. Keep the same design system and
+                layout style for the Events, Users, Sponsorship, QR Analytics, and
+                Performance pages.
+              </p>
+            </div>
+          )}
+        </section>
+      </div>
 
       <style jsx>{`
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0px);
+        :root {
+          --bg: #f8fafc;
+          --panel: #ffffff;
+          --panel-2: #f8fafc;
+          --text: #0f172a;
+          --muted: #64748b;
+          --line: #e2e8f0;
+          --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+          --shadow-soft: 0 6px 18px rgba(15, 23, 42, 0.05);
+          --primary: #2563eb;
+          --primary-dark: #1d4ed8;
+          --success: #059669;
+          --danger: #dc2626;
+          --warning: #d97706;
+        }
+
+        * {
+          box-sizing: border-box;
+        }
+
+        .admin-dashboard-page {
+          background:
+            radial-gradient(circle at top left, rgba(37, 99, 235, 0.06), transparent 30%),
+            radial-gradient(circle at top right, rgba(79, 70, 229, 0.05), transparent 30%),
+            var(--bg);
+          min-height: 100vh;
+          padding-top: 110px;
+          padding-bottom: 70px;
+        }
+
+        .dashboard-shell {
+          width: min(1400px, calc(100% - 32px));
+          margin: 0 auto;
+        }
+
+        .dashboard-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 24px;
+          margin-bottom: 28px;
+          flex-wrap: wrap;
+        }
+
+        .eyebrow {
+          display: inline-flex;
+          align-items: center;
+          padding: 6px 12px;
+          border-radius: 999px;
+          background: rgba(37, 99, 235, 0.08);
+          color: var(--primary);
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          margin-bottom: 14px;
+        }
+
+        .dashboard-header h1 {
+          margin: 0 0 10px;
+          font-size: clamp(28px, 4vw, 42px);
+          line-height: 1.1;
+          color: var(--text);
+          font-weight: 800;
+          letter-spacing: -0.03em;
+        }
+
+        .dashboard-header p {
+          margin: 0;
+          max-width: 760px;
+          color: var(--muted);
+          font-size: 16px;
+          line-height: 1.7;
+        }
+
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .period-select,
+        .btn {
+          height: 44px;
+          border-radius: 12px;
+          border: 1px solid var(--line);
+          font-size: 14px;
+          font-weight: 600;
+          padding: 0 16px;
+          outline: none;
+          transition: 0.25s ease;
+        }
+
+        .period-select {
+          min-width: 170px;
+          background: #fff;
+          color: var(--text);
+          cursor: pointer;
+        }
+
+        .btn {
+          cursor: pointer;
+        }
+
+        .btn-light {
+          background: #fff;
+          color: var(--text);
+        }
+
+        .btn-light:hover,
+        .period-select:hover {
+          border-color: #cbd5e1;
+          box-shadow: var(--shadow-soft);
+        }
+
+        .btn-primary {
+          background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+          color: #fff;
+          border: none;
+          box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25);
+        }
+
+        .btn-primary:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 14px 30px rgba(37, 99, 235, 0.3);
+        }
+
+        .hero-summary {
+          display: grid;
+          grid-template-columns: 1.6fr 1fr;
+          gap: 20px;
+          margin-bottom: 26px;
+        }
+
+        .hero-card,
+        .panel,
+        .stat-card,
+        .mini-stat-card,
+        .quick-action-card {
+          background: rgba(255, 255, 255, 0.92);
+          border: 1px solid rgba(226, 232, 240, 0.9);
+          box-shadow: var(--shadow);
+          backdrop-filter: blur(10px);
+        }
+
+        .hero-card {
+          border-radius: 24px;
+          padding: 28px;
+        }
+
+        .hero-card-primary {
+          background:
+            radial-gradient(circle at top right, rgba(99, 102, 241, 0.12), transparent 25%),
+            linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        }
+
+        .hero-card-top {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          margin-bottom: 18px;
+        }
+
+        .hero-badge {
+          display: inline-flex;
+          padding: 7px 12px;
+          border-radius: 999px;
+          background: #e0e7ff;
+          color: #4338ca;
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .hero-badge.subtle {
+          background: #eff6ff;
+          color: #1d4ed8;
+        }
+
+        .hero-card h2 {
+          margin: 0 0 12px;
+          font-size: clamp(22px, 3vw, 32px);
+          color: var(--text);
+          line-height: 1.2;
+          font-weight: 800;
+          letter-spacing: -0.03em;
+          max-width: 720px;
+        }
+
+        .hero-card p {
+          margin: 0;
+          color: var(--muted);
+          line-height: 1.7;
+          max-width: 720px;
+        }
+
+        .hero-mini-stats {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 14px;
+          margin-top: 24px;
+        }
+
+        .hero-mini-stats div {
+          padding: 16px;
+          border-radius: 18px;
+          background: rgba(255, 255, 255, 0.8);
+          border: 1px solid var(--line);
+        }
+
+        .hero-mini-stats strong {
+          display: block;
+          font-size: 22px;
+          color: var(--text);
+          margin-bottom: 4px;
+        }
+
+        .hero-mini-stats span {
+          color: var(--muted);
+          font-size: 13px;
+        }
+
+        .hero-side-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+        }
+
+        .mini-stat-card {
+          border-radius: 20px;
+          padding: 20px;
+        }
+
+        .mini-stat-card .mini-label {
+          display: block;
+          font-size: 13px;
+          color: var(--muted);
+          margin-bottom: 10px;
+          font-weight: 600;
+        }
+
+        .mini-stat-card strong {
+          display: block;
+          font-size: 28px;
+          color: var(--text);
+          margin-bottom: 6px;
+          line-height: 1;
+        }
+
+        .mini-stat-card small {
+          font-size: 13px;
+          font-weight: 600;
+        }
+
+        .text-success {
+          color: var(--success);
+        }
+
+        .text-danger {
+          color: var(--danger);
+        }
+
+        .tabs-bar {
+          display: flex;
+          gap: 10px;
+          overflow-x: auto;
+          padding: 6px;
+          background: rgba(255, 255, 255, 0.85);
+          border: 1px solid var(--line);
+          border-radius: 18px;
+          box-shadow: var(--shadow-soft);
+          margin-bottom: 24px;
+        }
+
+        .tab-btn {
+          border: none;
+          background: transparent;
+          color: var(--muted);
+          font-size: 14px;
+          font-weight: 700;
+          padding: 12px 18px;
+          border-radius: 12px;
+          cursor: pointer;
+          transition: 0.25s ease;
+          white-space: nowrap;
+        }
+
+        .tab-btn:hover {
+          background: #f1f5f9;
+          color: var(--text);
+        }
+
+        .tab-btn.active {
+          background: linear-gradient(135deg, #eff6ff, #eef2ff);
+          color: var(--primary);
+          box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.12);
+        }
+
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 18px;
+          margin-bottom: 22px;
+        }
+
+        .stat-card {
+          border-radius: 22px;
+          padding: 22px;
+          transition: 0.25s ease;
+        }
+
+        .stat-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 16px 36px rgba(15, 23, 42, 0.1);
+        }
+
+        .stat-card-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 18px;
+        }
+
+        .stat-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 22px;
+        }
+
+        .change-badge {
+          font-size: 12px;
+          font-weight: 700;
+          padding: 6px 10px;
+          border-radius: 999px;
+        }
+
+        .change-badge.up {
+          background: rgba(16, 185, 129, 0.12);
+          color: var(--success);
+        }
+
+        .change-badge.down {
+          background: rgba(239, 68, 68, 0.1);
+          color: var(--danger);
+        }
+
+        .stat-title {
+          color: var(--muted);
+          font-size: 14px;
+          font-weight: 700;
+          margin-bottom: 8px;
+        }
+
+        .stat-value {
+          font-size: 34px;
+          font-weight: 800;
+          letter-spacing: -0.03em;
+          color: var(--text);
+          margin-bottom: 8px;
+        }
+
+        .stat-description {
+          margin: 0 0 16px;
+          font-size: 14px;
+          color: var(--muted);
+          line-height: 1.6;
+          min-height: 44px;
+        }
+
+        .sparkline {
+          height: 56px;
+          background: #f8fafc;
+          border: 1px solid #eef2f7;
+          border-radius: 14px;
+          padding: 8px;
+        }
+
+        .sparkline svg {
+          width: 100%;
+          height: 100%;
+        }
+
+        .content-grid {
+          display: grid;
+          grid-template-columns: 1.6fr 1fr;
+          gap: 20px;
+          margin-bottom: 20px;
+        }
+
+        .lower-grid {
+          align-items: start;
+        }
+
+        .panel {
+          border-radius: 24px;
+          padding: 24px;
+        }
+
+        .panel-large {
+          min-height: 100%;
+        }
+
+        .panel-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 16px;
+          margin-bottom: 22px;
+        }
+
+        .panel-header h3 {
+          margin: 0 0 6px;
+          font-size: 20px;
+          font-weight: 800;
+          color: var(--text);
+          letter-spacing: -0.02em;
+        }
+
+        .panel-header p {
+          margin: 0;
+          color: var(--muted);
+          font-size: 14px;
+          line-height: 1.6;
+        }
+
+        .panel-link {
+          border: none;
+          background: transparent;
+          color: var(--primary);
+          font-weight: 700;
+          cursor: pointer;
+          padding: 0;
+        }
+
+        .bar-chart {
+          height: 300px;
+          display: flex;
+          align-items: flex-end;
+          gap: 18px;
+        }
+
+        .bar-item {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+        }
+
+        .bar-track {
+          width: 100%;
+          height: 240px;
+          border-radius: 18px;
+          background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+          position: relative;
+          overflow: hidden;
+          border: 1px solid #eef2f7;
+        }
+
+        .bar-fill {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          border-radius: 18px;
+          background: linear-gradient(180deg, #4f46e5 0%, #2563eb 100%);
+          box-shadow: 0 12px 24px rgba(79, 70, 229, 0.22);
+        }
+
+        .bar-meta {
+          text-align: center;
+        }
+
+        .bar-month {
+          display: block;
+          color: var(--muted);
+          font-size: 13px;
+          margin-bottom: 4px;
+        }
+
+        .bar-meta strong {
+          color: var(--text);
+          font-size: 16px;
+        }
+
+        .category-list {
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+        }
+
+        .category-row {
+          padding: 16px;
+          border-radius: 18px;
+          background: #fbfdff;
+          border: 1px solid #eef2f7;
+        }
+
+        .category-top,
+        .category-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .category-name-wrap {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .category-dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          display: inline-block;
+        }
+
+        .category-name {
+          font-weight: 700;
+          color: var(--text);
+        }
+
+        .category-percent {
+          font-weight: 800;
+          color: var(--text);
+        }
+
+        .progress-track {
+          width: 100%;
+          height: 10px;
+          background: #e2e8f0;
+          border-radius: 999px;
+          overflow: hidden;
+          margin: 12px 0 10px;
+        }
+
+        .progress-fill {
+          height: 100%;
+          border-radius: 999px;
+        }
+
+        .category-footer {
+          font-size: 13px;
+          color: var(--muted);
+        }
+
+        .table-wrap {
+          overflow-x: auto;
+        }
+
+        .dashboard-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .dashboard-table thead th {
+          text-align: left;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: #64748b;
+          padding: 0 0 14px;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .dashboard-table tbody td {
+          padding: 16px 0;
+          border-bottom: 1px solid #f1f5f9;
+          color: var(--text);
+          font-size: 14px;
+        }
+
+        .table-status {
+          display: inline-flex;
+          padding: 7px 12px;
+          border-radius: 999px;
+          background: #eff6ff;
+          color: #1d4ed8;
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .side-stack {
+          display: grid;
+          gap: 20px;
+        }
+
+        .activity-list,
+        .performers-list {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+
+        .activity-item,
+        .performer-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 14px;
+          padding: 14px 0;
+          border-bottom: 1px solid #f1f5f9;
+        }
+
+        .activity-item:last-child,
+        .performer-row:last-child {
+          border-bottom: none;
+          padding-bottom: 0;
+        }
+
+        .activity-item strong,
+        .performer-row strong {
+          display: block;
+          color: var(--text);
+          font-size: 14px;
+          margin-bottom: 4px;
+        }
+
+        .activity-item span,
+        .performer-row span {
+          color: var(--muted);
+          font-size: 13px;
+          line-height: 1.5;
+        }
+
+        .performer-right {
+          text-align: right;
+          flex-shrink: 0;
+        }
+
+        .quick-actions {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+        }
+
+        .quick-action-card {
+          border-radius: 20px;
+          padding: 20px;
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          border: 1px solid var(--line);
+          cursor: pointer;
+          text-align: left;
+          transition: 0.25s ease;
+        }
+
+        .quick-action-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+          border-color: #cbd5e1;
+        }
+
+        .quick-action-card span {
+          width: 48px;
+          height: 48px;
+          border-radius: 14px;
+          background: #eff6ff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 22px;
+          flex-shrink: 0;
+        }
+
+        .quick-action-card strong {
+          display: block;
+          color: var(--text);
+          font-size: 15px;
+          margin-bottom: 4px;
+        }
+
+        .quick-action-card small {
+          color: var(--muted);
+          font-size: 13px;
+          line-height: 1.5;
+        }
+
+        .empty-state {
+          text-align: center;
+          padding: 70px 20px;
+        }
+
+        .empty-state h3 {
+          margin-bottom: 10px;
+        }
+
+        .empty-state p {
+          margin: 0 auto;
+          max-width: 650px;
+          color: var(--muted);
+          line-height: 1.7;
+        }
+
+        @media (max-width: 1200px) {
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
           }
-          50% {
-            transform: translateY(-20px);
+
+          .quick-actions {
+            grid-template-columns: repeat(2, 1fr);
           }
         }
-        
-        @keyframes pulse {
-          0% {
-            transform: scale(1);
-            box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+
+        @media (max-width: 992px) {
+          .hero-summary,
+          .content-grid {
+            grid-template-columns: 1fr;
           }
-          70% {
-            transform: scale(1);
-            box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+
+          .hero-side-grid {
+            grid-template-columns: 1fr 1fr;
           }
-          100% {
-            transform: scale(1);
-            box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
-          }
-        }
-        
-        @keyframes fadeInDown {
-          from {
-            opacity: 0;
-            transform: translateY(-30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
+
+          .hero-mini-stats {
+            grid-template-columns: 1fr;
           }
         }
-        
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
+
+        @media (max-width: 768px) {
+          .admin-dashboard-page {
+            padding-top: 95px;
           }
-          to {
-            opacity: 1;
-            transform: translateY(0);
+
+          .dashboard-shell {
+            width: min(100% - 20px, 1400px);
+          }
+
+          .stats-grid,
+          .quick-actions,
+          .hero-side-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .panel,
+          .stat-card,
+          .hero-card,
+          .mini-stat-card {
+            padding: 18px;
+            border-radius: 18px;
+          }
+
+          .dashboard-header {
+            margin-bottom: 22px;
+          }
+
+          .dashboard-header h1 {
+            font-size: 30px;
+          }
+
+          .bar-chart {
+            gap: 10px;
+          }
+
+          .bar-track {
+            height: 180px;
           }
         }
       `}</style>
 
-  <Footer />
+      <Footer />
     </>
   );
 }
-  

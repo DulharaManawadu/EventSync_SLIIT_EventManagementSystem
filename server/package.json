@@ -9,7 +9,8 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "seed": "node seedEvents.js"
+    "seed": "node seedEvents.js",
+    "seed-sample": "node seedSampleEvents.js"
   },
   "keywords": [
     "events",

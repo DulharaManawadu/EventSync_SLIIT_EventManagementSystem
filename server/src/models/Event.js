@@ -1,5 +1,27 @@
 const mongoose = require('mongoose');
 
+const SponsorshipTierSchema = new mongoose.Schema(
+  {
+    tierName: {
+      type: String,
+      enum: ['Gold', 'Silver', 'Bronze'],
+      required: [true, 'Tier name is required']
+    },
+    price: {
+      type: Number,
+      required: [true, 'Tier price is required'],
+      min: [0, 'Tier price cannot be negative']
+    },
+    benefits: {
+      type: String,
+      required: [true, 'Tier benefits are required'],
+      trim: true,
+      maxlength: [500, 'Benefits cannot exceed 500 characters']
+    }
+  },
+  { _id: false }
+);
+
 const EventSchema = new mongoose.Schema(
   {
     // ===== BASIC INFORMATION =====
@@ -13,6 +35,9 @@ const EventSchema = new mongoose.Schema(
 
     description: {
       type: String,
+      required: [true, 'Event description is required'],
+      trim: true,
+      minlength: [20, 'Description must be at least 20 characters long'],
       maxlength: [5000, 'Description cannot exceed 5000 characters']
     },
 
@@ -53,11 +78,15 @@ const EventSchema = new mongoose.Schema(
 
     department: {
       type: String,
-      maxlength: [50, 'Department name cannot exceed 50 characters']
+      trim: true,
+      maxlength: [100, 'Department name cannot exceed 100 characters']
     },
 
     venue: {
       type: String,
+      required: [true, 'Venue is required'],
+      trim: true,
+      minlength: [2, 'Venue must be at least 2 characters long'],
       maxlength: [100, 'Venue cannot exceed 100 characters']
     },
 
@@ -66,9 +95,9 @@ const EventSchema = new mongoose.Schema(
       required: [true, 'Event date is required'],
       validate: {
         validator: function (value) {
-          return value >= new Date();
+          return value && value.getTime() >= Date.now() - 60000;
         },
-        message: 'Event date must be in the future'
+        message: 'Event date must be in the present or future'
       }
     },
 
@@ -107,21 +136,52 @@ const EventSchema = new mongoose.Schema(
       default: false
     },
 
-    // ===== ORGANIZER & APPROVAL =====
+    // ===== ORGANIZER DETAILS =====
     organizer: {
+      type: String,
+      required: [true, 'Organizer is required'],
+      trim: true,
+      maxlength: [100, 'Organizer cannot exceed 100 characters']
+    },
+
+    organizerName: {
       type: String,
       required: [true, 'Organizer name is required'],
       trim: true,
+      minlength: [2, 'Organizer name must be at least 2 characters long'],
       maxlength: [100, 'Organizer name cannot exceed 100 characters']
     },
 
     organizerEmail: {
       type: String,
-      match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Please provide a valid email address'],
+      trim: true,
       lowercase: true,
-      trim: true
+      match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Please provide a valid email address']
     },
 
+    phoneNumbers: [
+      {
+        type: String,
+        trim: true,
+        validate: {
+          validator: function (value) {
+            return /^[+\d\s\-()]{7,20}$/.test(value);
+          },
+          message:
+            'Phone number must contain only digits, spaces, +, hyphens, or parentheses and be 7-20 characters long'
+        }
+      }
+    ],
+
+    societyName: {
+      type: String,
+      required: [true, 'Society name is required'],
+      trim: true,
+      minlength: [2, 'Society name must be at least 2 characters long'],
+      maxlength: [100, 'Society name cannot exceed 100 characters']
+    },
+
+    // ===== APPROVAL =====
     status: {
       type: String,
       enum: ['Draft', 'Pending', 'Approved', 'Rejected', 'Completed', 'Cancelled'],
@@ -129,11 +189,13 @@ const EventSchema = new mongoose.Schema(
     },
 
     approvedBy: {
-      type: String
+      type: String,
+      trim: true
     },
 
     rejectionReason: {
       type: String,
+      trim: true,
       maxlength: [500, 'Rejection reason cannot exceed 500 characters']
     },
 
@@ -143,22 +205,17 @@ const EventSchema = new mongoose.Schema(
       default: false
     },
 
-    sponsorshipTiers: [
-      {
-        tierName: {
-          type: String,
-          enum: ['Gold', 'Silver', 'Bronze']
+    sponsorshipTiers: {
+      type: [SponsorshipTierSchema],
+      default: [],
+      validate: {
+        validator: function (tiers) {
+          if (!this.sponsorshipEnabled) return true;
+          return Array.isArray(tiers) && tiers.length > 0;
         },
-        price: {
-          type: Number,
-          min: 0
-        },
-        benefits: {
-          type: String,
-          maxlength: [500, 'Benefits cannot exceed 500 characters']
-        }
+        message: 'At least one sponsorship tier is required when sponsorship is enabled'
       }
-    ],
+    },
 
     // ===== FINANCIAL =====
     budget: {
@@ -184,7 +241,7 @@ const EventSchema = new mongoose.Schema(
       default: false
     },
 
-    // ===== TAGS (For Filtering & Search) =====
+    // ===== TAGS =====
     tags: [
       {
         type: String,
@@ -193,7 +250,7 @@ const EventSchema = new mongoose.Schema(
       }
     ],
 
-    // ===== ANALYTICS FIELDS =====
+    // ===== ANALYTICS =====
     feedbackScore: {
       type: Number,
       min: [0, 'Feedback score cannot be less than 0'],
@@ -207,6 +264,7 @@ const EventSchema = new mongoose.Schema(
 
     cancellationReason: {
       type: String,
+      trim: true,
       maxlength: [500, 'Cancellation reason cannot exceed 500 characters']
     }
   },
@@ -217,21 +275,52 @@ const EventSchema = new mongoose.Schema(
   }
 );
 
-// Virtual for checking if event is full
+// ===== EXTRA SCHEMA VALIDATION =====
+EventSchema.path('phoneNumbers').validate(function (value) {
+  return Array.isArray(value) && value.length > 0;
+}, 'At least one phone number is required');
+
+EventSchema.pre('validate', function (next) {
+  if (this.organizerName && !this.organizer) {
+    this.organizer = this.organizerName;
+  }
+
+  if (!this.sponsorshipEnabled) {
+    this.sponsorshipTiers = [];
+  }
+
+  if (Array.isArray(this.tags)) {
+    this.tags = this.tags
+      .map((tag) => (typeof tag === 'string' ? tag.trim() : tag))
+      .filter(Boolean);
+  }
+
+  if (Array.isArray(this.phoneNumbers)) {
+    this.phoneNumbers = this.phoneNumbers
+      .map((phone) => (typeof phone === 'string' ? phone.trim() : phone))
+      .filter(Boolean);
+  }
+
+  next();
+});
+
+// ===== VIRTUALS =====
 EventSchema.virtual('isFull').get(function () {
   return this.capacity && this.registrationCount >= this.capacity;
 });
 
-// Virtual for calculating attendance rate
 EventSchema.virtual('attendanceRate').get(function () {
-  return this.registrationCount > 0 ? (this.attendanceCount / this.registrationCount * 100).toFixed(2) : 0;
+  return this.registrationCount > 0
+    ? ((this.attendanceCount / this.registrationCount) * 100).toFixed(2)
+    : 0;
 });
 
-// Index for common queries
+// ===== INDEXES =====
 EventSchema.index({ date: 1 });
 EventSchema.index({ status: 1 });
 EventSchema.index({ faculty: 1 });
 EventSchema.index({ category: 1 });
 EventSchema.index({ isFeatured: 1 });
+EventSchema.index({ title: 'text', description: 'text', tags: 'text' });
 
 module.exports = mongoose.model('Event', EventSchema);

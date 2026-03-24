@@ -1,200 +1,476 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import AdminHeader from './AdminHeader';
 import Footer from './Footer';
 
+const API_BASE = 'http://localhost:5000/api/events';
+
 export default function EventApproval() {
-  // Helper functions for status and priority colors
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'approved': return '#10b981';
-      case 'pending': return '#f59e0b';
-      case 'rejected': return '#ef4444';
-      default: return '#6b7280';
-    }
-  };
-
-  const getPriorityColor = (priority) => {
-    switch(priority) {
-      case 'high': return '#ef4444';
-      case 'medium': return '#f59e0b';
-      case 'low': return '#10b981';
-      default: return '#6b7280';
-    }
-  };
-
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState('All');
   const [selectedEvents, setSelectedEvents] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Fetch events from API
-  useEffect(() => {
-    fetchEvents();
-  }, []);
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Approved':
+        return {
+          bg: '#ecfdf5',
+          text: '#059669',
+          border: '#a7f3d0'
+        };
+      case 'Pending':
+        return {
+          bg: '#fffbeb',
+          text: '#d97706',
+          border: '#fcd34d'
+        };
+      case 'Rejected':
+        return {
+          bg: '#fef2f2',
+          text: '#dc2626',
+          border: '#fca5a5'
+        };
+      default:
+        return {
+          bg: '#f3f4f6',
+          text: '#6b7280',
+          border: '#d1d5db'
+        };
+    }
+  };
+
+  const showTemporaryMessage = (type, message) => {
+    if (type === 'success') {
+      setSuccessMessage(message);
+      setError('');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } else {
+      setError(message);
+      setSuccessMessage('');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
 
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      console.log('Fetching events from API...');
-      const response = await fetch('http://localhost:5000/api/events');
-      console.log('Response status:', response.status);
+      const response = await fetch(API_BASE);
       if (!response.ok) throw new Error('Failed to fetch events');
+
       const data = await response.json();
-      console.log('API response data:', data);
-      // Handle different API response formats
-      const eventsData = data && data.data ? data.data : (Array.isArray(data) ? data : []);
-      console.log('Events data to set:', eventsData);
+      const eventsData = Array.isArray(data?.data) ? data.data : [];
       setEvents(eventsData);
     } catch (err) {
       console.error('Error fetching events:', err);
-      setError(err.message);
+      setEvents([]);
+      setError(err.message || 'Failed to fetch events');
     } finally {
       setLoading(false);
     }
   };
 
-  // Filter events based on active tab
-  const getFilteredEvents = () => {
-    console.log('Filtering events. Active tab:', activeTab);
-    console.log('Total events:', events.length);
-    console.log('Events data:', events);
-    
-    if (activeTab === 'all') {
-      console.log('Returning all events:', events);
-      return events;
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
+  const filteredEvents = useMemo(() => {
+    if (activeTab === 'All') return events;
+    return events.filter((event) => event.status === activeTab);
+  }, [activeTab, events]);
+
+  const tabs = [
+    { key: 'All', label: 'All Events', count: events.length, icon: '📋' },
+    {
+      key: 'Pending',
+      label: 'Pending',
+      count: events.filter((e) => e.status === 'Pending').length,
+      icon: '⏳'
+    },
+    {
+      key: 'Approved',
+      label: 'Approved',
+      count: events.filter((e) => e.status === 'Approved').length,
+      icon: '✅'
+    },
+    {
+      key: 'Rejected',
+      label: 'Rejected',
+      count: events.filter((e) => e.status === 'Rejected').length,
+      icon: '❌'
     }
-    const filtered = events.filter(event => event.status === activeTab);
-    console.log('Filtered events:', filtered);
-    console.log('Event statuses:', events.map(e => ({ id: e._id, status: e.status })));
-    return filtered;
-  };
-
-  const currentEvents = getFilteredEvents();
-
-  // Debug: Log tab counts
-  console.log('=== TAB COUNTS ===');
-  console.log('All Events:', events.length);
-  console.log('Pending:', events.filter(e => e.status === 'pending').length);
-  console.log('Approved:', events.filter(e => e.status === 'approved').length);
-  console.log('Rejected:', events.filter(e => e.status === 'rejected').length);
-  console.log('Current tab:', activeTab);
-  console.log('Current events count:', currentEvents.length);
-  console.log('==================');
+  ];
 
   const handleEventSelection = (eventId) => {
-    setSelectedEvents(prev => 
-      prev.includes(eventId) 
-        ? prev.filter(id => id !== eventId)
+    setSelectedEvents((prev) =>
+      prev.includes(eventId)
+        ? prev.filter((id) => id !== eventId)
         : [...prev, eventId]
     );
   };
 
-  const handleBulkAction = async (action) => {
+  const handleStatusUpdate = async (eventId, newStatus) => {
     try {
-      const response = await fetch('http://localhost:5000/api/events/bulk-update', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          eventIds: selectedEvents,
-          action: action
-        })
+      const response = await fetch(`${API_BASE}/${eventId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
       });
-      
-      if (!response.ok) throw new Error(`Failed to ${action} events`);
-      
-      // Refresh events after bulk action
-      await fetchEvents();
-      setSelectedEvents([]);
-      setSuccessMessage(`Successfully ${action}d ${selectedEvents.length} events`);
-      setTimeout(() => setSuccessMessage(''), 3000);
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.errors?.join(', ') ||
+            result.message ||
+            'Failed to update status'
+        );
+      }
+
+      setEvents((prev) =>
+        prev.map((event) => (event._id === eventId ? result.data : event))
+      );
+
+      showTemporaryMessage('success', `Event status updated to ${newStatus}`);
     } catch (err) {
-      setError(err.message);
+      console.error(err);
+      showTemporaryMessage('error', err.message || 'Failed to update status');
     }
   };
 
-  const handleStatusUpdate = async (eventId, newStatus) => {
+  const handleBulkAction = async (action) => {
+    if (selectedEvents.length === 0) return;
+
+    const mappedStatus =
+      action === 'approve'
+        ? 'Approved'
+        : action === 'reject'
+        ? 'Rejected'
+        : 'Pending';
+
     try {
-      console.log(`Updating event ${eventId} to status: ${newStatus}`);
-      const response = await fetch(`http://localhost:5000/api/events/${eventId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
-      
-      if (!response.ok) throw new Error('Failed to update status');
-      
-      // Update local state
-      setEvents(prev => {
-        const updated = prev.map(event => 
-          event._id === eventId ? { ...event, status: newStatus } : event
-        );
-        console.log('Updated events after status change:', updated);
-        return updated;
-      });
-      
-      setSuccessMessage(`Event status updated to ${newStatus}`);
-      setTimeout(() => setSuccessMessage(''), 3000);
+      const results = await Promise.all(
+        selectedEvents.map(async (eventId) => {
+          const response = await fetch(`${API_BASE}/${eventId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: mappedStatus })
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(
+              result.errors?.join(', ') ||
+                result.message ||
+                'Bulk update failed'
+            );
+          }
+
+          return result.data;
+        })
+      );
+
+      setEvents((prev) =>
+        prev.map((event) => {
+          const updated = results.find((r) => r._id === event._id);
+          return updated || event;
+        })
+      );
+
+      setSelectedEvents([]);
+      showTemporaryMessage(
+        'success',
+        `Successfully updated ${results.length} event(s) to ${mappedStatus}`
+      );
     } catch (err) {
-      console.error('Error updating status:', err);
-      setError(err.message);
-      setTimeout(() => setError(''), 3000);
+      showTemporaryMessage('error', err.message || 'Bulk update failed');
     }
   };
 
   const handleDelete = async (eventId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/events/${eventId}`, {
+      const response = await fetch(`${API_BASE}/${eventId}`, {
         method: 'DELETE'
       });
-      
-      if (!response.ok) throw new Error('Failed to delete event');
-      
-      // Update local state
-      setEvents(prev => prev.filter(event => event._id !== eventId));
-      
-      setSuccessMessage('Event deleted successfully');
-      setTimeout(() => setSuccessMessage(''), 3000);
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to delete event');
+      }
+
+      setEvents((prev) => prev.filter((event) => event._id !== eventId));
       setShowDeleteModal(null);
+      showTemporaryMessage('success', 'Event deleted successfully');
     } catch (err) {
-      setError(err.message);
-      setTimeout(() => setError(''), 3000);
+      showTemporaryMessage('error', err.message || 'Failed to delete event');
     }
   };
 
-  const handleUpdateEvent = async (updatedData) => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/events/${editingEvent._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedData)
-      });
-      
-      if (!response.ok) throw new Error('Failed to update event');
-      
-      const updatedEvent = await response.json();
-      
-      // Update local state
-      setEvents(prev => prev.map(event => 
-        event._id === editingEvent._id ? updatedEvent.data : event
-      ));
-      
-      setSuccessMessage('Event updated successfully');
-      setTimeout(() => setSuccessMessage(''), 3000);
-      setShowEditModal(false);
-      setEditingEvent(null);
-    } catch (err) {
-      setError(err.message);
-      setTimeout(() => setError(''), 3000);
+  const formatDate = (value) => {
+    if (!value) return 'Date TBD';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return 'Date TBD';
+    return d.toLocaleDateString();
+  };
+
+  const baseButtonStyle = {
+    border: 'none',
+    borderRadius: '10px',
+    padding: '10px 16px',
+    fontSize: '14px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease'
+  };
+
+  const styles = {
+    pageSection: {
+      background: 'linear-gradient(135deg, #0f172a 0%, #111827 50%, #1e293b 100%)',
+      color: '#fff',
+      padding: '52px 0 42px'
+    },
+    pageTitle: {
+      fontSize: 'clamp(28px, 4vw, 40px)',
+      fontWeight: 800,
+      marginBottom: '10px',
+      letterSpacing: '-0.02em'
+    },
+    pageSubtitle: {
+      color: 'rgba(255,255,255,0.78)',
+      margin: 0,
+      fontSize: '16px'
+    },
+    stickyTabs: {
+      background: 'rgba(255,255,255,0.92)',
+      backdropFilter: 'blur(10px)',
+      borderBottom: '1px solid #e5e7eb',
+      position: 'sticky',
+      top: 0,
+      zIndex: 100
+    },
+    tabsWrap: {
+      display: 'flex',
+      gap: '10px',
+      overflowX: 'auto',
+      padding: '14px 0'
+    },
+    tabButton: (active) => ({
+      border: active ? '1px solid #4f46e5' : '1px solid #e5e7eb',
+      background: active ? 'linear-gradient(135deg, #4f46e5, #6366f1)' : '#ffffff',
+      color: active ? '#ffffff' : '#475569',
+      borderRadius: '14px',
+      padding: '12px 18px',
+      fontSize: '14px',
+      fontWeight: 700,
+      whiteSpace: 'nowrap',
+      cursor: 'pointer',
+      boxShadow: active
+        ? '0 10px 25px rgba(79, 70, 229, 0.24)'
+        : '0 4px 12px rgba(15, 23, 42, 0.05)',
+      transition: 'all 0.2s ease'
+    }),
+    contentSection: {
+      background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
+      minHeight: '70vh',
+      padding: '32px 0 50px'
+    },
+    messageBox: {
+      borderRadius: '14px',
+      padding: '14px 18px',
+      marginBottom: '18px',
+      fontWeight: 500
+    },
+    bulkBar: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '16px',
+      flexWrap: 'wrap',
+      background: '#ffffff',
+      border: '1px solid #e5e7eb',
+      borderRadius: '18px',
+      padding: '16px 18px',
+      marginBottom: '24px',
+      boxShadow: '0 8px 24px rgba(15, 23, 42, 0.06)'
+    },
+    bulkActions: {
+      display: 'flex',
+      gap: '10px',
+      flexWrap: 'wrap'
+    },
+    gridRow: {
+      display: 'flex',
+      flexWrap: 'wrap'
+    },
+    cardCol: {
+      display: 'flex'
+    },
+    card: {
+      background: '#ffffff',
+      borderRadius: '22px',
+      padding: '22px',
+      boxShadow: '0 12px 30px rgba(15, 23, 42, 0.08)',
+      border: '1px solid rgba(226, 232, 240, 0.95)',
+      width: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'relative',
+      overflow: 'hidden'
+    },
+    cardTopRow: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: '12px',
+      marginBottom: '14px'
+    },
+    titleRow: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: '12px',
+      flex: 1,
+      minWidth: 0
+    },
+    checkboxWrap: {
+      paddingTop: '4px',
+      flexShrink: 0
+    },
+    checkbox: {
+      width: '18px',
+      height: '18px',
+      cursor: 'pointer',
+      accentColor: '#4f46e5'
+    },
+    title: {
+      fontSize: 'clamp(22px, 2vw, 28px)',
+      fontWeight: 800,
+      color: '#0f172a',
+      margin: 0,
+      lineHeight: 1.2,
+      wordBreak: 'break-word'
+    },
+    badge: (status) => {
+      const c = getStatusColor(status);
+      return {
+        background: c.bg,
+        color: c.text,
+        border: `1px solid ${c.border}`,
+        padding: '7px 14px',
+        borderRadius: '999px',
+        fontSize: '12px',
+        fontWeight: 800,
+        letterSpacing: '0.02em',
+        whiteSpace: 'nowrap',
+        flexShrink: 0
+      };
+    },
+    description: {
+      color: '#64748b',
+      fontSize: '15px',
+      lineHeight: 1.7,
+      marginBottom: '18px',
+      minHeight: '84px'
+    },
+    detailsGrid: {
+      display: 'grid',
+      gridTemplateColumns: '1fr',
+      gap: '12px',
+      marginBottom: '20px'
+    },
+    detailItem: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: '8px',
+      fontSize: '15px',
+      color: '#334155',
+      lineHeight: 1.5
+    },
+    detailLabel: {
+      minWidth: '92px',
+      fontWeight: 800,
+      color: '#0f172a'
+    },
+    actions: {
+      marginTop: 'auto',
+      display: 'flex',
+      gap: '10px',
+      flexWrap: 'wrap',
+      paddingTop: '12px'
+    },
+    approveBtn: {
+      ...baseButtonStyle,
+      background: '#16a34a',
+      color: '#fff'
+    },
+    pendingBtn: {
+      ...baseButtonStyle,
+      background: '#f59e0b',
+      color: '#fff'
+    },
+    rejectBtn: {
+      ...baseButtonStyle,
+      background: '#ef4444',
+      color: '#fff'
+    },
+    deleteBtn: {
+      ...baseButtonStyle,
+      background: '#111827',
+      color: '#fff'
+    },
+    secondaryBtn: {
+      ...baseButtonStyle,
+      background: '#e5e7eb',
+      color: '#111827'
+    },
+    emptyState: {
+      background: '#ffffff',
+      border: '1px dashed #cbd5e1',
+      borderRadius: '18px',
+      padding: '42px 24px',
+      textAlign: 'center',
+      color: '#64748b',
+      boxShadow: '0 8px 24px rgba(15, 23, 42, 0.05)'
+    },
+    modalOverlay: {
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(15, 23, 42, 0.55)',
+      backdropFilter: 'blur(5px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+      padding: '20px'
+    },
+    modal: {
+      background: '#ffffff',
+      borderRadius: '22px',
+      padding: '28px',
+      width: '100%',
+      maxWidth: '460px',
+      boxShadow: '0 25px 60px rgba(0,0,0,0.18)'
+    },
+    modalTitle: {
+      margin: '0 0 12px',
+      fontSize: '24px',
+      fontWeight: 800,
+      color: '#0f172a'
+    },
+    modalText: {
+      margin: '0 0 22px',
+      color: '#64748b',
+      lineHeight: 1.6
+    },
+    modalActions: {
+      display: 'flex',
+      gap: '10px',
+      justifyContent: 'flex-end',
+      flexWrap: 'wrap'
     }
   };
 
@@ -206,530 +482,191 @@ export default function EventApproval() {
 
       <AdminHeader />
 
-      {/* Page Header */}
-      <div style={{
-        background: 'linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 50%, #16213e 100%)',
-        color: '#ffffff',
-        padding: '40px 0',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-          opacity: 0.1
-        }}></div>
-        
-        <div className="container" style={{position: 'relative', zIndex: 1}}>
-          <div className="row">
-            <div className="col-lg-12">
-              <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap'}}>
-                <div>
-                  <h1 style={{
-                    fontSize: '36px',
-                    fontWeight: '700',
-                    marginBottom: '10px',
-                    display: 'flex',
-                    alignItems: 'center'
-                  }}>
-                    <span style={{
-                      width: '50px',
-                      height: '50px',
-                      background: 'linear-gradient(45deg, #f093fb 0%, #f5576c 100%)',
-                      borderRadius: '12px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginRight: '15px',
-                      fontSize: '24px'
-                    }}>✅</span>
-                    Event Approval Management
-                  </h1>
-                  <p style={{
-                    color: 'rgba(255, 255, 255, 0.8)',
-                    fontSize: '18px',
-                    margin: 0
-                  }}>
-                    Review and manage event submissions with creative approval workflow
-                  </p>
-                </div>
-                
-                <div style={{display: 'flex', gap: '15px', alignItems: 'center'}}>
-                  <div style={{
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    padding: '10px 15px',
-                    borderRadius: '8px',
-                    fontSize: '14px'
-                  }}>
-                    Total Events: {events.length}
-                  </div>
-                  
-                  {successMessage && (
-                    <div style={{
-                      background: 'rgba(16, 185, 129, 0.9)',
-                      color: '#ffffff',
-                      padding: '10px 15px',
-                      borderRadius: '8px',
-                      fontSize: '14px'
-                    }}>
-                      ✅ {successMessage}
-                    </div>
-                  )}
-                  
-                  {error && (
-                    <div style={{
-                      background: 'rgba(239, 68, 68, 0.9)',
-                      color: '#ffffff',
-                      padding: '10px 15px',
-                      borderRadius: '8px',
-                      fontSize: '14px'
-                    }}>
-                      ❌ {error}
-                    </div>
-                  )}
-                  
-                  {selectedEvents.length > 0 && (
-                    <div style={{display: 'flex', gap: '10px'}}>
-                      <button 
-                        onClick={() => handleBulkAction('approve')}
-                        style={{
-                          background: 'linear-gradient(45deg, #10b981 0%, #059669 100%)',
-                          border: 'none',
-                          color: '#ffffff',
-                          padding: '10px 20px',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          fontWeight: '500',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        ✅ Approve Selected ({selectedEvents.length})
-                      </button>
-                      <button 
-                        onClick={() => handleBulkAction('reject')}
-                        style={{
-                          background: 'linear-gradient(45deg, #ef4444 0%, #dc2626 100%)',
-                          border: 'none',
-                          color: '#ffffff',
-                          padding: '10px 20px',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          fontWeight: '500',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        ❌ Reject Selected ({selectedEvents.length})
-                      </button>
-                    </div>
-                  )}
-                </div>
+<div
+  style={{
+    background: 'linear-gradient(135deg, #0f172a 0%, #111827 50%, #1e293b 100%)',
+    color: '#fff',
+    padding: '110px 0 42px', // increased top padding to push content below navbar
+    marginTop: '0'
+  }}
+>
+  <div className="container">
+    <h1
+  style={{
+    fontSize: 'clamp(28px, 4vw, 40px)',
+    fontWeight: 800,
+    marginBottom: '10px',
+    letterSpacing: '-0.02em',
+    lineHeight: 1.2,
+    color: '#f8fafc', // brighter heading color
+    textShadow: '0 2px 10px rgba(0,0,0,0.25)'
+  }}
+>
+   Event Approval Management
+</h1>
+    <p
+      style={{
+        color: 'rgba(255,255,255,0.78)',
+        margin: 0,
+        fontSize: '16px'
+      }}
+    >
+      Review, approve, reject, and manage submitted events with a cleaner admin experience.
+    </p>
+  </div>
+</div>
+
+      <div style={styles.contentSection}>
+        <div className="container">
+          {successMessage && (
+            <div
+              style={{
+                ...styles.messageBox,
+                background: '#ecfdf5',
+                color: '#065f46',
+                border: '1px solid #a7f3d0'
+              }}
+            >
+              {successMessage}
+            </div>
+          )}
+
+          {error && (
+            <div
+              style={{
+                ...styles.messageBox,
+                background: '#fef2f2',
+                color: '#991b1b',
+                border: '1px solid #fecaca'
+              }}
+            >
+              {error}
+            </div>
+          )}
+
+          {selectedEvents.length > 0 && (
+            <div style={styles.bulkBar}>
+              <div style={{ fontWeight: 700, color: '#0f172a' }}>
+                {selectedEvents.length} event(s) selected
+              </div>
+
+              <div style={styles.bulkActions}>
+                <button
+                  onClick={() => handleBulkAction('approve')}
+                  style={styles.approveBtn}
+                >
+                  Approve Selected
+                </button>
+                <button
+                  onClick={() => handleBulkAction('reject')}
+                  style={styles.rejectBtn}
+                >
+                  Reject Selected
+                </button>
+                <button
+                  onClick={() => handleBulkAction('pending')}
+                  style={styles.pendingBtn}
+                >
+                  Mark Pending
+                </button>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
+          )}
 
-      {/* Status Tabs */}
-      <div style={{
-        background: '#ffffff',
-        borderBottom: '1px solid #e5e7eb',
-        position: 'sticky',
-        top: '0',
-        zIndex: 100
-      }}>
-        <div className="container">
-          <div style={{display: 'flex', gap: '0', overflowX: 'auto'}}>
-            {[
-              { key: 'all', label: 'All Events', count: events.length, icon: '📋' },
-              { key: 'pending', label: 'Pending', count: events.filter(e => e.status === 'pending').length, icon: '⏳' },
-              { key: 'approved', label: 'Approved', count: events.filter(e => e.status === 'approved').length, icon: '✅' },
-              { key: 'rejected', label: 'Rejected', count: events.filter(e => e.status === 'rejected').length, icon: '❌' }
-            ].map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                style={{
-                  background: activeTab === tab.key ? '#4f46e5' : 'transparent',
-                  color: activeTab === tab.key ? '#ffffff' : '#6b7280',
-                  border: 'none',
-                  padding: '15px 25px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  borderBottom: activeTab === tab.key ? '3px solid #4f46e5' : '3px solid transparent',
-                  whiteSpace: 'nowrap',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                <span>{tab.icon}</span>
-                <span>{tab.label}</span>
-                <span style={{
-                  background: activeTab === tab.key ? 'rgba(255, 255, 255, 0.2)' : '#e5e7eb',
-                  color: activeTab === tab.key ? '#ffffff' : '#6b7280',
-                  padding: '2px 8px',
-                  borderRadius: '12px',
-                  fontSize: '12px',
-                  fontWeight: '600'
-                }}>
-                  {tab.count}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div style={{background: '#f8fafc', minHeight: 'calc(100vh - 200px)', padding: '30px 0'}}>
-        <div className="container">
-          
           {loading ? (
-            <div style={{
-              background: '#ffffff',
-              borderRadius: '16px',
-              padding: '60px',
-              textAlign: 'center',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-              border: '1px solid #e5e7eb'
-            }}>
-              <div style={{fontSize: '48px', marginBottom: '20px'}}>⏳</div>
-              <h3 style={{fontSize: '20px', fontWeight: '600', color: '#111827', marginBottom: '10px'}}>
-                Loading Events...
-              </h3>
-              <p style={{color: '#6b7280', fontSize: '16px'}}>
-                Please wait while we fetch the events.
-              </p>
-            </div>
-          ) : currentEvents.length === 0 ? (
-            <div style={{
-              background: '#ffffff',
-              borderRadius: '16px',
-              padding: '60px',
-              textAlign: 'center',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-              border: '1px solid #e5e7eb'
-            }}>
-              <div style={{fontSize: '48px', marginBottom: '20px'}}>
-                {activeTab === 'pending' ? '⏳' : activeTab === 'approved' ? '✅' : '❌'}
-              </div>
-              <h3 style={{fontSize: '20px', fontWeight: '600', color: '#111827', marginBottom: '10px'}}>
-                No {activeTab} events
-              </h3>
-              <p style={{color: '#6b7280', fontSize: '16px'}}>
-                {activeTab === 'pending' 
-                  ? 'All events have been reviewed. Great job!' 
-                  : `No events in ${activeTab} status.`
-                }
+            <div style={styles.emptyState}>Loading events...</div>
+          ) : filteredEvents.length === 0 ? (
+            <div style={styles.emptyState}>
+              <h4 style={{ marginBottom: '8px', color: '#0f172a', fontWeight: 800 }}>
+                No events found
+              </h4>
+              <p style={{ margin: 0 }}>
+                There are no events available under the selected tab right now.
               </p>
             </div>
           ) : (
-            <div className="row">
-              {currentEvents.map((event) => (
-                <div key={event._id} className="col-lg-6 mb-4">
-                  <div style={{
-                    background: '#ffffff',
-                    borderRadius: '16px',
-                    padding: '25px',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                    border: '1px solid #e5e7eb',
-                    position: 'relative',
-                    transition: 'all 0.3s ease'
-                  }} onMouseOver={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-5px)';
-                    e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
-                  }} onMouseOut={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-                  }}>
-                    
-                    {/* Status Badge */}
-                    <div style={{
-                      position: 'absolute',
-                      top: '20px',
-                      right: '20px',
-                      display: 'flex',
-                      gap: '10px'
-                    }}>
-                      <span style={{
-                        background: `${getStatusColor(event.status)}15`,
-                        color: getStatusColor(event.status),
-                        padding: '6px 12px',
-                        borderRadius: '20px',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        textTransform: 'capitalize'
-                      }}>
-                        {event.status}
-                      </span>
-                      <span style={{
-                        background: `${getPriorityColor(event.priority || 'medium')}15`,
-                        color: getPriorityColor(event.priority || 'medium'),
-                        padding: '6px 12px',
-                        borderRadius: '20px',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        textTransform: 'capitalize'
-                      }}>
-                        {event.priority} priority
-                      </span>
+            <div className="row" style={styles.gridRow}>
+              {filteredEvents.map((event) => (
+                <div key={event._id} className="col-lg-6 mb-4" style={styles.cardCol}>
+                  <div style={styles.card}>
+                    <div style={styles.cardTopRow}>
+                      <div style={styles.titleRow}>
+                        {activeTab === 'Pending' && (
+                          <div style={styles.checkboxWrap}>
+                            <input
+                              type="checkbox"
+                              checked={selectedEvents.includes(event._id)}
+                              onChange={() => handleEventSelection(event._id)}
+                              style={styles.checkbox}
+                            />
+                          </div>
+                        )}
+
+                        <h3 style={styles.title}>{event.title}</h3>
+                      </div>
+
+                      <span style={styles.badge(event.status)}>{event.status}</span>
                     </div>
 
-                    {/* Selection Checkbox */}
-                    {activeTab === 'pending' && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '20px',
-                        left: '20px'
-                      }}>
-                        <input
-                          type="checkbox"
-                          checked={selectedEvents.includes(event.id)}
-                          onChange={() => handleEventSelection(event.id)}
-                          style={{
-                            width: '20px',
-                            height: '20px',
-                            cursor: 'pointer'
-                          }}
-                        />
-                      </div>
-                    )}
+                    <p style={styles.description}>
+                      {event.description || 'No description available for this event.'}
+                    </p>
 
-                    {/* Event Content */}
-                    <div style={{paddingLeft: activeTab === 'pending' ? '40px' : '0'}}>
-                      <h3 style={{
-                        fontSize: '20px',
-                        fontWeight: '600',
-                        color: '#111827',
-                        marginBottom: '15px',
-                        paddingRight: '150px'
-                      }}>
-                        {event.title}
-                      </h3>
-                      
-                      <div style={{display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '20px'}}>
-                        <span style={{
-                          background: '#e5e7eb',
-                          color: '#374151',
-                          padding: '4px 10px',
-                          borderRadius: '12px',
-                          fontSize: '12px',
-                          fontWeight: '500'
-                        }}>
-                          📚 {event.category}
-                        </span>
-                        <span style={{
-                          background: '#e5e7eb',
-                          color: '#374151',
-                          padding: '4px 10px',
-                          borderRadius: '12px',
-                          fontSize: '12px',
-                          fontWeight: '500'
-                        }}>
-                          🏢 {event.faculty}
-                        </span>
-                        <span style={{
-                          background: '#e5e7eb',
-                          color: '#374151',
-                          padding: '4px 10px',
-                          borderRadius: '12px',
-                          fontSize: '12px',
-                          fontWeight: '500'
-                        }}>
-                          👥 {event.organizer}
-                        </span>
+                    <div style={styles.detailsGrid}>
+                      <div style={styles.detailItem}>
+                        <span style={styles.detailLabel}>Category:</span>
+                        <span>{event.category || 'N/A'}</span>
                       </div>
 
-                      <p style={{
-                        color: '#6b7280',
-                        fontSize: '14px',
-                        lineHeight: '1.6',
-                        marginBottom: '20px'
-                      }}>
-                        {event.description || 'No description available'}
-                      </p>
-
-                      <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(2, 1fr)',
-                        gap: '15px',
-                        marginBottom: '20px'
-                      }}>
-                        <div style={{display: 'flex', alignItems: 'center'}}>
-                          <span style={{marginRight: '8px'}}>📅</span>
-                          <div>
-                            <div style={{fontSize: '12px', color: '#6b7280'}}>Date & Time</div>
-                            <div style={{fontSize: '14px', fontWeight: '500', color: '#111827'}}>
-                              {event.date ? new Date(event.date).toLocaleDateString() : 'Date TBD'} 
-                              {event.time ? ` at ${event.time}` : ''}
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{display: 'flex', alignItems: 'center'}}>
-                          <span style={{marginRight: '8px'}}>📍</span>
-                          <div>
-                            <div style={{fontSize: '12px', color: '#6b7280'}}>Venue</div>
-                            <div style={{fontSize: '14px', fontWeight: '500', color: '#111827'}}>
-                              {event.venue || 'Venue TBD'}
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{display: 'flex', alignItems: 'center'}}>
-                          <span style={{marginRight: '8px'}}>👥</span>
-                          <div>
-                            <div style={{fontSize: '12px', color: '#6b7280'}}>Capacity</div>
-                            <div style={{fontSize: '14px', fontWeight: '500', color: '#111827'}}>
-                              {event.registered || 0}/{event.capacity || 'Unlimited'}
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{display: 'flex', alignItems: 'center'}}>
-                          <span style={{marginRight: '8px'}}>💰</span>
-                          <div>
-                            <div style={{fontSize: '12px', color: '#6b7280'}}>Budget</div>
-                            <div style={{fontSize: '14px', fontWeight: '500', color: '#111827'}}>
-                              {event.budget ? `Rs. ${event.budget.toLocaleString()}` : 'Budget TBD'}
-                            </div>
-                          </div>
-                        </div>
+                      <div style={styles.detailItem}>
+                        <span style={styles.detailLabel}>Faculty:</span>
+                        <span>{event.faculty || 'N/A'}</span>
                       </div>
 
-                      {/* Organizer Info */}
-                      {event.organizer && (
-                        <div style={{
-                          background: '#f8fafc',
-                          padding: '15px',
-                          borderRadius: '8px',
-                          marginBottom: '20px',
-                          border: '1px solid #e5e7eb'
-                        }}>
-                          <div style={{fontSize: '12px', fontWeight: '600', color: '#111827', marginBottom: '5px'}}>
-                            📋 Organizer
-                          </div>
-                          <div style={{fontSize: '14px', color: '#374151'}}>{event.organizer}</div>
-                        </div>
-                      )}
-
-                      {/* Sponsorship Info */}
-                      {event.sponsorshipEnabled && (
-                        <div style={{
-                          background: '#f8fafc',
-                          padding: '15px',
-                          borderRadius: '8px',
-                          marginBottom: '20px',
-                          border: '1px solid #e5e7eb'
-                        }}>
-                          <div style={{fontSize: '12px', fontWeight: '600', color: '#111827', marginBottom: '10px'}}>
-                            🤝 Sponsorship Tiers
-                          </div>
-                          <div style={{display: 'flex', gap: '10px'}}>
-                            {event.sponsorshipTiers.map((tier, index) => (
-                              <div key={index} style={{
-                                background: '#ffffff',
-                                padding: '8px 12px',
-                                borderRadius: '6px',
-                                border: '1px solid #e5e7eb',
-                                fontSize: '12px'
-                              }}>
-                                <div style={{fontWeight: '600', color: '#111827'}}>{tier.tier}</div>
-                                <div style={{color: '#6b7280'}}>Rs. {tier.price.toLocaleString()}</div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Rejection Reason */}
-                      {event.status === 'rejected' && event.rejectionReason && (
-                        <div style={{
-                          background: '#fef2f2',
-                          padding: '15px',
-                          borderRadius: '8px',
-                          marginBottom: '20px',
-                          border: '1px solid #fecaca'
-                        }}>
-                          <div style={{fontSize: '12px', fontWeight: '600', color: '#dc2626', marginBottom: '5px'}}>
-                            Rejection Reason
-                          </div>
-                          <div style={{fontSize: '14px', color: '#7f1d1d'}}>{event.rejectionReason}</div>
-                        </div>
-                      )}
-
-                      {/* Timeline */}
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        paddingTop: '15px',
-                        borderTop: '1px solid #e5e7eb',
-                        fontSize: '12px',
-                        color: '#6b7280'
-                      }}>
-                        <div>
-                          Submitted: {event.submittedDate}
-                          {event.approvedDate && ` | Approved: ${event.approvedDate}`}
-                          {event.rejectedDate && ` | Rejected: ${event.rejectedDate}`}
-                        </div>
+                      <div style={styles.detailItem}>
+                        <span style={styles.detailLabel}>Organizer:</span>
+                        <span>{event.organizerName || event.organizer || 'N/A'}</span>
                       </div>
 
-                      {/* Action Buttons */}
-                      <div style={{display: 'flex', gap: '10px', marginTop: '20px', flexWrap: 'wrap'}}>
-                        {activeTab === 'pending' && (
-                          <>
-                            <button 
-                              onClick={() => handleStatusUpdate(event._id, 'approved')}
-                              style={{
-                                background: 'linear-gradient(45deg, #10b981 0%, #059669 100%)',
-                                border: 'none',
-                                color: '#ffffff',
-                                padding: '10px 20px',
-                                borderRadius: '8px',
-                                fontSize: '14px',
-                                fontWeight: '500',
-                                cursor: 'pointer',
-                                flex: 1
-                              }}>
-                              ✅ Approve
-                            </button>
-                            <button 
-                              onClick={() => handleStatusUpdate(event._id, 'rejected')}
-                              style={{
-                                background: 'linear-gradient(45deg, #ef4444 0%, #dc2626 100%)',
-                                border: 'none',
-                                color: '#ffffff',
-                                padding: '10px 20px',
-                                borderRadius: '8px',
-                                fontSize: '14px',
-                                fontWeight: '500',
-                                cursor: 'pointer',
-                                flex: 1
-                              }}>
-                              ❌ Reject
-                            </button>
-                          </>
-                        )}
-                        
-                        {/* Delete button for all events */}
-                        <button 
-                          onClick={() => handleDelete(event._id)}
-                          style={{
-                            background: 'linear-gradient(45deg, #ef4444 0%, #dc2626 100%)',
-                            border: 'none',
-                            color: '#ffffff',
-                            padding: '10px 20px',
-                            borderRadius: '8px',
-                            fontSize: '14px',
-                            fontWeight: '500',
-                            cursor: 'pointer'
-                          }}>
-                          🗑️ Delete
-                        </button>
+                      <div style={styles.detailItem}>
+                        <span style={styles.detailLabel}>Date:</span>
+                        <span>{formatDate(event.date)}</span>
                       </div>
+
+                      <div style={styles.detailItem}>
+                        <span style={styles.detailLabel}>Venue:</span>
+                        <span>{event.venue || 'Venue TBD'}</span>
+                      </div>
+                    </div>
+
+                    <div style={styles.actions}>
+                      <button
+                        onClick={() => handleStatusUpdate(event._id, 'Approved')}
+                        style={styles.approveBtn}
+                      >
+                        Approve
+                      </button>
+
+                      <button
+                        onClick={() => handleStatusUpdate(event._id, 'Pending')}
+                        style={styles.pendingBtn}
+                      >
+                        Pending
+                      </button>
+
+                      <button
+                        onClick={() => handleStatusUpdate(event._id, 'Rejected')}
+                        style={styles.rejectBtn}
+                      >
+                        Reject
+                      </button>
+
+                      <button
+                        onClick={() => setShowDeleteModal(event._id)}
+                        style={styles.deleteBtn}
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -739,75 +676,33 @@ export default function EventApproval() {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            background: '#ffffff',
-            borderRadius: '16px',
-            padding: '30px',
-            maxWidth: '400px',
-            width: '90%'
-          }}>
-            <h3 style={{fontSize: '20px', fontWeight: '600', marginBottom: '15px', color: '#111827'}}>
-              ⚠️ Confirm Deletion
-            </h3>
-            
-            <p style={{color: '#6b7280', marginBottom: '20px', lineHeight: '1.5'}}>
-              Are you sure you want to delete this event? This action cannot be undone and will remove all event data including registrations.
+        <div style={styles.modalOverlay}>
+          <div style={styles.modal}>
+            <h3 style={styles.modalTitle}>Confirm Delete</h3>
+            <p style={styles.modalText}>
+              Are you sure you want to delete this event? This action cannot be undone.
             </p>
-            
-            <div style={{display: 'flex', gap: '10px'}}>
-              <button
-                onClick={() => handleDelete(showDeleteModal)}
-                style={{
-                  background: 'linear-gradient(45deg, #ef4444 0%, #dc2626 100%)',
-                  border: 'none',
-                  color: '#ffffff',
-                  padding: '12px 24px',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  flex: 1
-                }}
-              >
-                Delete Event
-              </button>
-              
+
+            <div style={styles.modalActions}>
               <button
                 onClick={() => setShowDeleteModal(null)}
-                style={{
-                  background: 'linear-gradient(45deg, #6b7280 0%, #4b5563 100%)',
-                  border: 'none',
-                  color: '#ffffff',
-                  padding: '12px 24px',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  flex: 1
-                }}
+                style={styles.secondaryBtn}
               >
                 Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(showDeleteModal)}
+                style={styles.rejectBtn}
+              >
+                Delete Event
               </button>
             </div>
           </div>
         </div>
       )}
 
-<Footer />
+      <Footer />
     </>
   );
 }

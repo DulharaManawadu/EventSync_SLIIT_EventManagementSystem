@@ -500,92 +500,123 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      <section className="calculator">
-        <div className="container">
-          <div className="row">
-            <div className="col-lg-7">
-              <div className="left-image">
-                <img src="/assets/images/calculator-image.png" alt="" />
-              </div>
-            </div>
-            <div className="col-lg-5">
-              <div className="section-heading">
-                <h6>EventSync Support</h6>
-                <h4>Request Event Approval or Support</h4>
-              </div>
-              <form id="calculate" action="" method="get">
-                <div className="row">
-                  <div className="col-lg-6">
-                    <fieldset>
-                      <label htmlFor="name">Your Name</label>
-                      <input
-                        type="text"
-                        name="name"
-                        id="name"
-                        placeholder="Enter your full name"
-                        autoComplete="on"
-                        required
-                      />
-                    </fieldset>
-                  </div>
-                  <div className="col-lg-6">
-                    <fieldset>
-                      <label htmlFor="email">Your Email</label>
-                      <input
-                        type="email"
-                        name="email"
-                        id="email"
-                        pattern="[^ @]*@[^ @]*"
-                        placeholder="Enter your SLIIT email"
-                        required
-                      />
-                    </fieldset>
-                  </div>
-                  <div className="col-lg-12">
-                    <fieldset>
-                      <label htmlFor="subject">Event Title / Subject</label>
-                      <input
-                        type="text"
-                        name="subject"
-                        id="subject"
-                        placeholder="Enter event title or request subject"
-                        autoComplete="on"
-                      />
-                    </fieldset>
-                  </div>
-                  <div className="col-lg-12">
-                    <fieldset>
-                      <label htmlFor="chooseOption" className="form-label">
-                        Request Type
-                      </label>
-                      <select
-                        name="Category"
-                        className="form-select"
-                        aria-label="Default select example"
-                        id="chooseOption"
-                      >
-                        <option value="">Choose Request Type</option>
-                        <option value="Event Creation">Event Creation</option>
-                        <option value="Event Approval">Event Approval</option>
-                        <option value="Venue Booking">Venue Booking</option>
-                        <option value="Sponsorship Application">Sponsorship Application</option>
-                      </select>
-                    </fieldset>
-                  </div>
-                  <div className="col-lg-12">
-                    <fieldset>
-                      <button type="submit" id="form-submit" className="orange-button">
-                        Submit Request
-                      </button>
-                    </fieldset>
-                  </div>
-                </div>
-              </form>
-            </div>
-          </div>
+<section className="calculator">
+  <div className="container">
+    <div className="row align-items-center">
+      <div className="col-lg-7">
+        <div className="left-image">
+          <img
+            src="/assets/images/calculator-image.png"
+            alt="EventSync Support"
+          />
         </div>
-      </section>
+      </div>
+
+      <div className="col-lg-5">
+        <div
+          style={{
+            background: 'rgba(10, 20, 45, 0.78)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            padding: '35px',
+            borderRadius: '20px',
+            border: '1px solid rgba(255,255,255,0.12)',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.25)'
+          }}
+        >
+          <div className="section-heading" style={{ marginBottom: '20px' }}>
+            <h6 style={{ color: '#ff6b35', marginBottom: '10px' }}>
+              EventSync Support
+            </h6>
+            <h4
+              style={{
+                color: '#ffffff',
+                fontSize: 'clamp(30px, 4vw, 52px)',
+                lineHeight: '1.15',
+                fontWeight: '700',
+                marginBottom: '20px'
+              }}
+            >
+              Making Campus Event Management Easier
+            </h4>
+          </div>
+
+          <p
+            style={{
+              color: 'rgba(255,255,255,0.88)',
+              fontSize: '16px',
+              lineHeight: '1.9',
+              marginBottom: '24px'
+            }}
+          >
+            EventSync helps students, clubs, and university organizers manage
+            campus events through a smooth and organized digital platform. From
+            event creation to approval workflows, the system simplifies every
+            step of planning and coordination.
+          </p>
+
+          <div style={{ marginBottom: '22px' }}>
+            <h6
+              style={{
+                color: '#ffffff',
+                fontSize: '18px',
+                fontWeight: '700',
+                marginBottom: '12px'
+              }}
+            >
+              What EventSync Supports
+            </h6>
+
+            <ul
+              style={{
+                color: 'rgba(255,255,255,0.9)',
+                paddingLeft: '20px',
+                marginBottom: 0,
+                lineHeight: '2'
+              }}
+            >
+              <li>Event creation and submission</li>
+              <li>Approval and review management</li>
+              <li>Venue coordination</li>
+              <li>Sponsorship planning</li>
+              <li>Registration and attendance tracking</li>
+            </ul>
+          </div>
+
+          <div style={{ marginBottom: '25px' }}>
+            <h6
+              style={{
+                color: '#ffffff',
+                fontSize: '18px',
+                fontWeight: '700',
+                marginBottom: '12px'
+              }}
+            >
+              Why Use EventSync
+            </h6>
+
+            <p
+              style={{
+                color: 'rgba(255,255,255,0.88)',
+                fontSize: '15px',
+                lineHeight: '1.8',
+                marginBottom: 0
+              }}
+            >
+              With a centralized dashboard, EventSync improves communication
+              between students and administrators while making events easier to
+              review, schedule, and manage efficiently.
+            </p>
+          </div>
+
+          <a href="/events" className="orange-button">
+            Explore Events
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
       <section className="testimonials" id="testimonials">
         <div className="container">

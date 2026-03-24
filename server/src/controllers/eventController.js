@@ -7,79 +7,310 @@ const { isValidObjectId } = require('mongoose');
 const isValidId = (id) => isValidObjectId(id);
 
 /**
+ * Helpers
+ */
+const trimString = (value) =>
+  typeof value === 'string' ? value.trim() : value;
+
+const sanitizeStringArray = (value) => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => (typeof item === 'string' ? item.trim() : item))
+    .filter(Boolean);
+};
+
+const sanitizeSponsorshipTiers = (tiers) => {
+  if (!Array.isArray(tiers)) return [];
+
+  return tiers
+    .map((tier) => ({
+      tierName: trimString(tier?.tierName),
+      price:
+        tier?.price === '' || tier?.price === null || tier?.price === undefined
+          ? undefined
+          : Number(tier.price),
+      benefits: trimString(tier?.benefits)
+    }))
+    .filter(
+      (tier) =>
+        tier.tierName &&
+        tier.price !== undefined &&
+        !Number.isNaN(tier.price) &&
+        tier.benefits
+    );
+};
+
+const buildValidationErrors = (payload, isUpdate = false) => {
+  const errors = [];
+
+  const requiredFields = [
+    'title',
+    'description',
+    'category',
+    'faculty',
+    'venue',
+    'date',
+    'capacity',
+    'organizerName',
+    'societyName'
+  ];
+
+  if (!isUpdate) {
+    requiredFields.forEach((field) => {
+      if (
+        payload[field] === undefined ||
+        payload[field] === null ||
+        payload[field] === ''
+      ) {
+        errors.push(`${field} is required`);
+      }
+    });
+  }
+
+  if (!isUpdate || payload.title !== undefined) {
+    if (!payload.title || !trimString(payload.title)) {
+      errors.push('Event title is required');
+    }
+  }
+
+  if (!isUpdate || payload.description !== undefined) {
+    if (!payload.description || !trimString(payload.description)) {
+      errors.push('Event description is required');
+    }
+  }
+
+  if (!isUpdate || payload.venue !== undefined) {
+    if (!payload.venue || !trimString(payload.venue)) {
+      errors.push('Venue is required');
+    }
+  }
+
+  if (!isUpdate || payload.organizerName !== undefined) {
+    if (!payload.organizerName || !trimString(payload.organizerName)) {
+      errors.push('Organizer name is required');
+    }
+  }
+
+  if (!isUpdate || payload.societyName !== undefined) {
+    if (!payload.societyName || !trimString(payload.societyName)) {
+      errors.push('Society name is required');
+    }
+  }
+
+  if (!isUpdate || payload.capacity !== undefined) {
+    const capacity = Number(payload.capacity);
+    if (Number.isNaN(capacity) || capacity < 1) {
+      errors.push('Capacity must be a positive number');
+    }
+  }
+
+  if (!isUpdate || payload.date !== undefined) {
+    const eventDate = new Date(payload.date);
+    if (!payload.date || Number.isNaN(eventDate.getTime())) {
+      errors.push('Invalid event date format');
+    }
+  }
+
+  if (payload.endDate) {
+    const startDate = new Date(payload.date);
+    const endDate = new Date(payload.endDate);
+
+    if (Number.isNaN(endDate.getTime())) {
+      errors.push('Invalid end date format');
+    } else if (!Number.isNaN(startDate.getTime()) && endDate <= startDate) {
+      errors.push('End date must be after start date');
+    }
+  }
+
+  if (!isUpdate || payload.organizerEmail !== undefined) {
+    if (payload.organizerEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimString(payload.organizerEmail))) {
+        errors.push('Please provide a valid email address');
+      }
+    }
+  }
+
+  if (!isUpdate || payload.phoneNumbers !== undefined) {
+    if (!Array.isArray(payload.phoneNumbers) || payload.phoneNumbers.length === 0) {
+      errors.push('At least one phone number is required');
+    } else {
+      const invalidPhone = payload.phoneNumbers.find(
+        (phone) => !/^[+\d\s\-()]{7,20}$/.test(String(phone).trim())
+      );
+      if (invalidPhone) {
+        errors.push(
+          'Each phone number must contain only digits, spaces, +, hyphens, or parentheses and be 7-20 characters long'
+        );
+      }
+    }
+  }
+
+  if (!isUpdate || payload.budget !== undefined) {
+    if (
+      payload.budget !== undefined &&
+      payload.budget !== null &&
+      payload.budget !== ''
+    ) {
+      const budget = Number(payload.budget);
+      if (Number.isNaN(budget) || budget < 0) {
+        errors.push('Budget cannot be negative');
+      }
+    }
+  }
+
+  if (!isUpdate || payload.status !== undefined) {
+    const allowedStatuses = [
+      'Draft',
+      'Pending',
+      'Approved',
+      'Rejected',
+      'Completed',
+      'Cancelled'
+    ];
+
+    if (payload.status && !allowedStatuses.includes(payload.status)) {
+      errors.push('Invalid event status');
+    }
+  }
+
+  if (payload.sponsorshipEnabled) {
+    if (
+      !Array.isArray(payload.sponsorshipTiers) ||
+      payload.sponsorshipTiers.length === 0
+    ) {
+      errors.push(
+        'At least one sponsorship tier is required when sponsorship is enabled'
+      );
+    }
+  }
+
+  return errors;
+};
+
+const normalizeEventPayload = (body, isUpdate = false) => {
+  const normalized = {};
+
+  if (!isUpdate || body.title !== undefined) {
+    normalized.title = trimString(body.title);
+  }
+
+  if (!isUpdate || body.description !== undefined) {
+    normalized.description = trimString(body.description);
+  }
+
+  if (!isUpdate || body.category !== undefined) {
+    normalized.category = body.category;
+  }
+
+  if (!isUpdate || body.eventType !== undefined) {
+    normalized.eventType = body.eventType || 'Physical';
+  }
+
+  if (!isUpdate || body.faculty !== undefined) {
+    normalized.faculty = body.faculty;
+  }
+
+  if (!isUpdate || body.department !== undefined) {
+    normalized.department = trimString(body.department);
+  }
+
+  if (!isUpdate || body.venue !== undefined) {
+    normalized.venue = trimString(body.venue);
+  }
+
+  if (!isUpdate || body.date !== undefined) {
+    normalized.date = body.date ? new Date(body.date) : body.date;
+  }
+
+  if (!isUpdate || body.endDate !== undefined) {
+    normalized.endDate = body.endDate ? new Date(body.endDate) : undefined;
+  }
+
+  if (!isUpdate || body.capacity !== undefined) {
+    normalized.capacity = Number(body.capacity);
+  }
+
+  if (!isUpdate || body.organizerName !== undefined) {
+    normalized.organizerName = trimString(body.organizerName);
+  }
+
+  if (!isUpdate || body.organizer !== undefined || body.organizerName !== undefined) {
+    normalized.organizer = trimString(body.organizerName || body.organizer || 'Web UI');
+  }
+
+  if (!isUpdate || body.organizerEmail !== undefined) {
+    normalized.organizerEmail = trimString(body.organizerEmail);
+  }
+
+  if (!isUpdate || body.phoneNumbers !== undefined) {
+    normalized.phoneNumbers = sanitizeStringArray(body.phoneNumbers);
+  }
+
+  if (!isUpdate || body.societyName !== undefined) {
+    normalized.societyName = trimString(body.societyName);
+  }
+
+  if (!isUpdate || body.sponsorshipEnabled !== undefined) {
+    normalized.sponsorshipEnabled = Boolean(body.sponsorshipEnabled);
+  }
+
+  if (!isUpdate || body.sponsorshipTiers !== undefined) {
+    normalized.sponsorshipTiers = sanitizeSponsorshipTiers(body.sponsorshipTiers);
+  }
+
+  if (!isUpdate || body.budget !== undefined) {
+    normalized.budget =
+      body.budget === '' || body.budget === null || body.budget === undefined
+        ? 0
+        : Number(body.budget);
+  }
+
+  if (!isUpdate || body.tags !== undefined) {
+    normalized.tags = sanitizeStringArray(body.tags);
+  }
+
+  if (!isUpdate || body.isFeatured !== undefined) {
+    normalized.isFeatured = Boolean(body.isFeatured);
+  }
+
+  // IMPORTANT: status support
+  if (!isUpdate || body.status !== undefined) {
+    normalized.status = body.status;
+  }
+
+  // Optional rejection reason
+  if (!isUpdate || body.rejectionReason !== undefined) {
+    normalized.rejectionReason = trimString(body.rejectionReason);
+  }
+
+  return normalized;
+};
+
+/**
  * Create a new event
  * POST /api/events
  */
 async function createEvent(req, res) {
   try {
-    const {
-      title,
-      description,
-      category,
-      eventType,
-      faculty,
-      department,
-      venue,
-      date,
-      endDate,
-      capacity,
-      organizer,
-      organizerEmail,
-      sponsorshipEnabled,
-      sponsorshipTiers,
-      budget,
-      tags,
-      isFeatured
-    } = req.body;
+    const normalized = normalizeEventPayload(req.body, false);
+    const validationErrors = buildValidationErrors(normalized, false);
 
-    // Validate required fields
-    if (!title || !date || !capacity || !category || !faculty) {
+    if (validationErrors.length > 0) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields',
-        requiredFields: ['title', 'date', 'capacity', 'category', 'faculty']
-      });
-    }
-
-    // Validate capacity is a positive number
-    if (typeof capacity !== 'number' || capacity < 1) {
-      return res.status(400).json({
-        success: false,
-        message: 'Capacity must be a positive number'
-      });
-    }
-
-    // Validate date
-    const eventDate = new Date(date);
-    if (isNaN(eventDate.getTime())) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid event date format'
+        message: 'Validation failed',
+        errors: validationErrors
       });
     }
 
     const event = new Event({
-      title: title.trim(),
-      description: description?.trim(),
-      category,
-      eventType,
-      faculty,
-      department: department?.trim(),
-      venue: venue?.trim(),
-      date: eventDate,
-      endDate: endDate ? new Date(endDate) : undefined,
-      capacity,
-      organizer: organizer?.trim() || 'Web UI',
-      organizerEmail: organizerEmail?.trim(),
-      sponsorshipEnabled,
-      sponsorshipTiers,
-      budget: budget || 0,
-      tags: tags?.map(tag => tag.trim()),
-      isFeatured,
+      ...normalized,
       status: 'Pending'
     });
 
     await event.save();
+
     res.status(201).json({
       success: true,
       message: 'Event created successfully',
@@ -88,9 +319,8 @@ async function createEvent(req, res) {
   } catch (err) {
     console.error('Create Event Error:', err);
 
-    // Handle validation errors from mongoose
     if (err.name === 'ValidationError') {
-      const messages = Object.values(err.errors).map(e => e.message);
+      const messages = Object.values(err.errors).map((e) => e.message);
       return res.status(400).json({
         success: false,
         message: 'Validation failed',
@@ -107,25 +337,27 @@ async function createEvent(req, res) {
 }
 
 /**
- * Get all events with optional filters and pagination
+ * Get all events
  * GET /api/events
- * Query params: status, faculty, category, page, limit
  */
 async function listEvents(req, res) {
   try {
     const { page = 1, limit = 20, ...filters } = req.query;
-    
-    // Parse pagination
-    const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
     const skip = (pageNum - 1) * limitNum;
 
-    // Build filter object - only allow specific fields to be filtered
-    const allowedFilters = ['status', 'faculty', 'category', 'isFeatured'];
+    const allowedFilters = ['status', 'faculty', 'category', 'isFeatured', 'eventType'];
     const filterObj = {};
-    allowedFilters.forEach(field => {
-      if (filters[field]) {
-        filterObj[field] = filters[field];
+
+    allowedFilters.forEach((field) => {
+      if (filters[field] !== undefined) {
+        if (field === 'isFeatured') {
+          filterObj[field] = filters[field] === 'true';
+        } else {
+          filterObj[field] = filters[field];
+        }
       }
     });
 
@@ -197,7 +429,7 @@ async function getEvent(req, res) {
 }
 
 /**
- * Register for an event (increment registration count)
+ * Register for an event
  * POST /api/events/:id/register
  */
 async function registerEvent(req, res) {
@@ -249,7 +481,7 @@ async function registerEvent(req, res) {
 }
 
 /**
- * Check in to an event (increment attendance count)
+ * Check in to an event
  * POST /api/events/:id/checkin
  */
 async function checkinEvent(req, res) {
@@ -299,7 +531,7 @@ async function checkinEvent(req, res) {
 }
 
 /**
- * Get analytics and aggregated data
+ * Get analytics
  * GET /api/events/analytics
  */
 async function analytics(req, res) {
@@ -350,9 +582,10 @@ async function analytics(req, res) {
     ]);
 
     const pastEvents = totalEvents - upcomingEvents;
-    const utilizationRate = totalCapacity[0]?.total > 0 
-      ? ((totalRegistrations[0]?.total || 0) / totalCapacity[0].total * 100).toFixed(2)
-      : 0;
+    const utilizationRate =
+      totalCapacity[0]?.total > 0
+        ? (((totalRegistrations[0]?.total || 0) / totalCapacity[0].total) * 100).toFixed(2)
+        : 0;
 
     res.json({
       success: true,
@@ -392,7 +625,6 @@ async function analytics(req, res) {
 async function updateEvent(req, res) {
   try {
     const { id } = req.params;
-    const updateData = req.body;
 
     if (!isValidId(id)) {
       return res.status(400).json({
@@ -410,8 +642,68 @@ async function updateEvent(req, res) {
       });
     }
 
-    // Update event with new data
-    Object.assign(event, updateData);
+    const normalized = normalizeEventPayload(req.body, true);
+
+    const mergedPayload = {
+      title: normalized.title !== undefined ? normalized.title : event.title,
+      description:
+        normalized.description !== undefined ? normalized.description : event.description,
+      category: normalized.category !== undefined ? normalized.category : event.category,
+      eventType: normalized.eventType !== undefined ? normalized.eventType : event.eventType,
+      faculty: normalized.faculty !== undefined ? normalized.faculty : event.faculty,
+      department:
+        normalized.department !== undefined ? normalized.department : event.department,
+      venue: normalized.venue !== undefined ? normalized.venue : event.venue,
+      date: normalized.date !== undefined ? normalized.date : event.date,
+      endDate: normalized.endDate !== undefined ? normalized.endDate : event.endDate,
+      capacity: normalized.capacity !== undefined ? normalized.capacity : event.capacity,
+      organizerName:
+        normalized.organizerName !== undefined
+          ? normalized.organizerName
+          : event.organizerName,
+      organizer:
+        normalized.organizer !== undefined ? normalized.organizer : event.organizer,
+      organizerEmail:
+        normalized.organizerEmail !== undefined
+          ? normalized.organizerEmail
+          : event.organizerEmail,
+      phoneNumbers:
+        normalized.phoneNumbers !== undefined
+          ? normalized.phoneNumbers
+          : event.phoneNumbers,
+      societyName:
+        normalized.societyName !== undefined ? normalized.societyName : event.societyName,
+      sponsorshipEnabled:
+        normalized.sponsorshipEnabled !== undefined
+          ? normalized.sponsorshipEnabled
+          : event.sponsorshipEnabled,
+      sponsorshipTiers:
+        normalized.sponsorshipTiers !== undefined
+          ? normalized.sponsorshipTiers
+          : event.sponsorshipTiers,
+      budget: normalized.budget !== undefined ? normalized.budget : event.budget,
+      tags: normalized.tags !== undefined ? normalized.tags : event.tags,
+      isFeatured:
+        normalized.isFeatured !== undefined ? normalized.isFeatured : event.isFeatured,
+      // IMPORTANT: include status in merged validation payload
+      status: normalized.status !== undefined ? normalized.status : event.status,
+      rejectionReason:
+        normalized.rejectionReason !== undefined
+          ? normalized.rejectionReason
+          : event.rejectionReason
+    };
+
+    const validationErrors = buildValidationErrors(mergedPayload, false);
+
+    if (validationErrors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: validationErrors
+      });
+    }
+
+    Object.assign(event, normalized);
     await event.save();
 
     res.json({
@@ -421,6 +713,16 @@ async function updateEvent(req, res) {
     });
   } catch (err) {
     console.error('Update Event Error:', err);
+
+    if (err.name === 'ValidationError') {
+      const messages = Object.values(err.errors).map((e) => e.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: messages
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: 'Server error occurred while updating event',
