@@ -530,12 +530,80 @@ export default function AdminDashboardAnalytics() {
 
         .admin-dashboard-page {
           background:
-            radial-gradient(circle at top left, rgba(37, 99, 235, 0.06), transparent 30%),
-            radial-gradient(circle at top right, rgba(79, 70, 229, 0.05), transparent 30%),
-            var(--bg);
+            radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.08) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(79, 70, 229, 0.06) 0%, transparent 50%),
+            radial-gradient(circle at 40% 40%, rgba(168, 85, 247, 0.04) 0%, transparent 50%),
+            linear-gradient(135deg, #f8fafc 0%, #e8f0fe 50%, #f0f9ff 100%);
           min-height: 100vh;
           padding-top: 110px;
           padding-bottom: 70px;
+          position: relative;
+          overflow: hidden;
+        }
+
+        /* Animated mesh gradient background */
+        .admin-dashboard-page::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-image: 
+            radial-gradient(circle at 25% 25%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 75% 75%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+            radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.05) 0%, transparent 50%);
+          animation: meshGradient 20s ease-in-out infinite;
+          z-index: -2;
+        }
+
+        @keyframes meshGradient {
+          0%, 100% {
+            transform: translate(0, 0) rotate(0deg);
+          }
+          25% {
+            transform: translate(-20px, -20px) rotate(1deg);
+          }
+          50% {
+            transform: translate(20px, -10px) rotate(-1deg);
+          }
+          75% {
+            transform: translate(-10px, 20px) rotate(2deg);
+          }
+        }
+
+        .admin-dashboard-page::after {
+          content: '';
+          position: absolute;
+          border-radius: 50%;
+          animation: float 8s ease-in-out infinite;
+          width: 400px;
+          height: 400px;
+          top: 10%;
+          left: 10%;
+          background: radial-gradient(circle, rgba(37, 99, 235, 0.1) 0%, transparent 70%);
+          box-shadow: 
+            0 0 60px rgba(37, 99, 235, 0.2),
+            inset 0 0 60px rgba(37, 99, 235, 0.1);
+          z-index: -1;
+        }
+
+        .admin-dashboard-page > .dashboard-shell::before {
+          content: '';
+          position: absolute;
+          border-radius: 50%;
+          animation: float 8s ease-in-out infinite;
+          animation-delay: 4s;
+          width: 300px;
+          height: 300px;
+          bottom: 15%;
+          right: 5%;
+          background: radial-gradient(circle, rgba(79, 70, 229, 0.08) 0%, transparent 70%);
+          box-shadow: 
+            0 0 40px rgba(79, 70, 229, 0.15),
+            inset 0 0 40px rgba(79, 70, 229, 0.08);
+          z-index: -1;
+          pointer-events: none;
         }
 
         .dashboard-shell {
@@ -600,6 +668,25 @@ export default function AdminDashboardAnalytics() {
           padding: 0 16px;
           outline: none;
           transition: 0.25s ease;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .period-select::before,
+        .btn::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+          transition: left 0.5s ease;
+        }
+
+        .period-select:hover::before,
+        .btn:hover::before {
+          left: 100%;
         }
 
         .period-select {
@@ -625,10 +712,38 @@ export default function AdminDashboardAnalytics() {
         }
 
         .btn-primary {
-          background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+          background: linear-gradient(135deg, #4f46e5 0%, #2563eb 50%, #1d4ed8 100%);
           color: #fff;
           border: none;
-          box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25);
+          box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+          position: relative;
+        }
+
+        .btn-primary::after {
+          content: '';
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          right: 2px;
+          bottom: 2px;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+          border-radius: 10px;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        .btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-primary:hover::after {
+          opacity: 1;
+        }
+
+        .btn-primary:active {
+          transform: translateY(0);
+          box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
         }
 
         .btn-primary:hover {
@@ -646,12 +761,52 @@ export default function AdminDashboardAnalytics() {
         .hero-card,
         .panel,
         .stat-card,
-        .mini-stat-card,
+        .mini-stat-card {
+          background: rgba(255, 255, 255, 0.92);
+          border: 1px solid rgba(226, 232, 240, 0.9);
+          box-shadow: var(--shadow);
+          backdrop-filter: blur(10px);
+        }
+
         .quick-action-card {
           background: rgba(255, 255, 255, 0.92);
           border: 1px solid rgba(226, 232, 240, 0.9);
           box-shadow: var(--shadow);
           backdrop-filter: blur(10px);
+          border-radius: 20px;
+          padding: 20px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          cursor: pointer;
+          transition: 0.3s ease;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .quick-action-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.1), transparent);
+          transition: left 0.6s ease;
+        }
+
+        .quick-action-card:hover::before {
+          left: 100%;
+        }
+
+        .quick-action-card:hover {
+          transform: translateY(-4px) scale(1.02);
+          box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);
+          border-color: rgba(37, 99, 235, 0.3);
+        }
+
+        .quick-action-card:active {
+          transform: translateY(-2px) scale(1.01);
         }
 
         .hero-card {
@@ -674,17 +829,43 @@ export default function AdminDashboardAnalytics() {
 
         .hero-badge {
           display: inline-flex;
-          padding: 7px 12px;
+          padding: 7px 14px;
           border-radius: 999px;
-          background: #e0e7ff;
-          color: #4338ca;
-          font-size: 12px;
+          background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%);
+          color: #fff;
+          font-size: 11px;
           font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          box-shadow: 
+            0 4px 12px rgba(37, 99, 235, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .hero-badge::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+          transition: left 0.6s ease;
+        }
+
+        .hero-badge:hover::before {
+          left: 100%;
         }
 
         .hero-badge.subtle {
-          background: #eff6ff;
-          color: #1d4ed8;
+          background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(79, 70, 229, 0.1) 100%);
+          color: #2563eb;
+          border: 1px solid rgba(37, 99, 235, 0.2);
+          box-shadow: 
+            0 2px 8px rgba(37, 99, 235, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.5);
         }
 
         .hero-card h2 {
@@ -772,14 +953,31 @@ export default function AdminDashboardAnalytics() {
 
         .tabs-bar {
           display: flex;
-          gap: 10px;
-          overflow-x: auto;
+          gap: 8px;
           padding: 6px;
-          background: rgba(255, 255, 255, 0.85);
-          border: 1px solid var(--line);
-          border-radius: 18px;
-          box-shadow: var(--shadow-soft);
-          margin-bottom: 24px;
+          background: rgba(255, 255, 255, 0.7);
+          backdrop-filter: blur(20px);
+          border-radius: 16px;
+          border: 1px solid rgba(226, 232, 240, 0.8);
+          margin-bottom: 32px;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .tabs-bar::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        .tabs-bar:hover::before {
+          opacity: 1;
         }
 
         .tab-btn {
@@ -791,19 +989,42 @@ export default function AdminDashboardAnalytics() {
           padding: 12px 18px;
           border-radius: 12px;
           cursor: pointer;
-          transition: 0.25s ease;
-          white-space: nowrap;
+          transition: 0.3s ease;
+          position: relative;
+          z-index: 1;
+        }
+
+        .tab-btn::before {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 0;
+          height: 0;
+          background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%);
+          border-radius: 8px;
+          transform: translate(-50%, -50%);
+          transition: all 0.3s ease;
+          z-index: -1;
         }
 
         .tab-btn:hover {
-          background: #f1f5f9;
           color: var(--text);
+          transform: translateY(-1px);
+        }
+
+        .tab-btn:hover::before {
+          width: 100%;
+          height: 100%;
+          border-radius: 12px;
+          opacity: 0.1;
         }
 
         .tab-btn.active {
-          background: linear-gradient(135deg, #eff6ff, #eef2ff);
-          color: var(--primary);
-          box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.12);
+          background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%);
+          color: #fff;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+          transform: translateY(-1px);
         }
 
         .stats-grid {
@@ -817,11 +1038,58 @@ export default function AdminDashboardAnalytics() {
           border-radius: 22px;
           padding: 22px;
           transition: 0.25s ease;
+          position: relative;
+          overflow: hidden;
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(226, 232, 240, 0.8);
+          box-shadow: 
+            0 10px 30px rgba(15, 23, 42, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+
+        .stat-card::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: linear-gradient(45deg, transparent 30%, rgba(37, 99, 235, 0.05) 50%, transparent 70%);
+          transform: rotate(45deg);
+          transition: all 0.6s ease;
+          opacity: 0;
+        }
+
+        .stat-card::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: 
+            radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.02) 0%, transparent 50%),
+            radial-gradient(circle at 80% 80%, rgba(79, 70, 229, 0.02) 0%, transparent 50%);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        .stat-card:hover::before {
+          opacity: 1;
+          transform: rotate(45deg) translate(20px, 20px);
+        }
+
+        .stat-card:hover::after {
+          opacity: 1;
         }
 
         .stat-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 16px 36px rgba(15, 23, 42, 0.1);
+          transform: translateY(-4px) scale(1.02);
+          box-shadow: 
+            0 20px 40px rgba(15, 23, 42, 0.12),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
+          border-color: rgba(37, 99, 235, 0.2);
         }
 
         .stat-card-top {
@@ -832,30 +1100,80 @@ export default function AdminDashboardAnalytics() {
         }
 
         .stat-icon {
-          width: 48px;
-          height: 48px;
-          border-radius: 14px;
+          width: 56px;
+          height: 56px;
+          border-radius: 16px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 22px;
+          font-size: 24px;
+          position: relative;
+          overflow: hidden;
+          transition: 0.3s ease;
+        }
+
+        .stat-icon::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+          transition: left 0.6s ease;
+        }
+
+        .stat-icon:hover::before {
+          left: 100%;
+        }
+
+        .stat-icon:hover {
+          transform: scale(1.1) rotate(5deg);
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
         }
 
         .change-badge {
           font-size: 12px;
           font-weight: 700;
-          padding: 6px 10px;
+          padding: 6px 12px;
           border-radius: 999px;
+          position: relative;
+          overflow: hidden;
+          transition: 0.3s ease;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .change-badge::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+          transition: left 0.5s ease;
+        }
+
+        .change-badge:hover::before {
+          left: 100%;
         }
 
         .change-badge.up {
-          background: rgba(16, 185, 129, 0.12);
-          color: var(--success);
+          background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+          color: #fff;
+          box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
         }
 
         .change-badge.down {
-          background: rgba(239, 68, 68, 0.1);
-          color: var(--danger);
+          background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+          color: #fff;
+          box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+
+        .change-badge:hover {
+          transform: translateY(-2px) scale(1.05);
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
         }
 
         .stat-title {
@@ -866,11 +1184,25 @@ export default function AdminDashboardAnalytics() {
         }
 
         .stat-value {
-          font-size: 34px;
+          font-size: 32px;
           font-weight: 800;
-          letter-spacing: -0.03em;
           color: var(--text);
+          line-height: 1;
           margin-bottom: 8px;
+          position: relative;
+          background: linear-gradient(135deg, var(--text) 0%, #2563eb 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          transition: 0.3s ease;
+        }
+
+        .stat-card:hover .stat-value {
+          background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          transform: scale(1.05);
         }
 
         .stat-description {
@@ -908,6 +1240,37 @@ export default function AdminDashboardAnalytics() {
         .panel {
           border-radius: 24px;
           padding: 24px;
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(226, 232, 240, 0.8);
+          box-shadow: 
+            0 10px 30px rgba(15, 23, 42, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .panel::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        .panel:hover::before {
+          opacity: 1;
+        }
+
+        .panel:hover {
+          transform: translateY(-2px);
+          box-shadow: 
+            0 20px 40px rgba(15, 23, 42, 0.12),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
         }
 
         .panel-large {
@@ -1044,16 +1407,48 @@ export default function AdminDashboardAnalytics() {
 
         .progress-track {
           width: 100%;
-          height: 10px;
-          background: #e2e8f0;
+          height: 12px;
+          background: linear-gradient(90deg, #e2e8f0 0%, #f1f5f9 100%);
           border-radius: 999px;
           overflow: hidden;
+          position: relative;
           margin: 12px 0 10px;
+          box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
         }
 
         .progress-fill {
           height: 100%;
           border-radius: 999px;
+          position: relative;
+          overflow: hidden;
+          background: linear-gradient(90deg, var(--progress-color, #4f46e5) 0%, var(--progress-color-light, #2563eb) 100%);
+          box-shadow: 
+            0 2px 8px rgba(37, 99, 235, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+          animation: progressGrow 1.5s ease-out;
+        }
+
+        .progress-fill::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+          animation: shimmer 2s ease-in-out infinite;
+        }
+
+        .progress-fill::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          width: 20px;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6));
+          border-radius: 999px;
+          animation: progressShine 3s ease-in-out infinite;
         }
 
         .category-footer {
@@ -1068,22 +1463,70 @@ export default function AdminDashboardAnalytics() {
         .dashboard-table {
           width: 100%;
           border-collapse: collapse;
+          background: rgba(255, 255, 255, 0.5);
+          border-radius: 16px;
+          overflow: hidden;
+        }
+
+        .dashboard-table thead {
+          background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
+          backdrop-filter: blur(10px);
         }
 
         .dashboard-table thead th {
           text-align: left;
           font-size: 12px;
           text-transform: uppercase;
-          letter-spacing: 0.06em;
-          color: #64748b;
-          padding: 0 0 14px;
-          border-bottom: 1px solid var(--line);
+          font-weight: 800;
+          letter-spacing: 0.05em;
+          color: var(--muted);
+          padding: 16px 20px;
+          border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+          position: relative;
+        }
+
+        .dashboard-table thead th::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 20px;
+          right: 20px;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.2), transparent);
+        }
+
+        .dashboard-table tbody tr {
+          transition: 0.2s ease;
+          position: relative;
+        }
+
+        .dashboard-table tbody tr::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 0;
+          bottom: 0;
+          background: linear-gradient(90deg, rgba(37, 99, 235, 0.02), transparent);
+          opacity: 0;
+          transition: opacity 0.2s ease;
+        }
+
+        .dashboard-table tbody tr:hover::before {
+          opacity: 1;
+        }
+
+        .dashboard-table tbody tr:hover {
+          background: rgba(37, 99, 235, 0.02);
+          transform: scale(1.01);
         }
 
         .dashboard-table tbody td {
-          padding: 16px 0;
-          border-bottom: 1px solid #f1f5f9;
+          padding: 16px 20px;
+          border-bottom: 1px solid rgba(241, 245, 249, 0.5);
           color: var(--text);
+          position: relative;
+          z-index: 1;
           font-size: 14px;
         }
 
@@ -1272,6 +1715,135 @@ export default function AdminDashboardAnalytics() {
 
           .bar-track {
             height: 180px;
+          }
+        }
+
+        @keyframes progressGrow {
+          from {
+            transform: scaleX(0);
+            opacity: 0;
+          }
+          to {
+            transform: scaleX(1);
+            opacity: 1;
+          }
+        }
+
+        @keyframes progressShine {
+          0%, 100% {
+            transform: translateX(0);
+            opacity: 0;
+          }
+          50% {
+            transform: translateX(-10px);
+            opacity: 1;
+          }
+        }
+
+        @keyframes sparkle {
+          0%, 100% {
+            opacity: 0;
+            transform: scale(0) rotate(0deg);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1) rotate(180deg);
+          }
+        }
+
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          33% {
+            transform: translateY(-30px) rotate(-5deg);
+          }
+          66% {
+            transform: translateY(-20px) rotate(3deg);
+          }
+        }
+
+        /* Sparkle particles for cards */
+        .stat-card::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: 
+            radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+            radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+            radial-gradient(circle at 40% 60%, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+            linear-gradient(45deg, transparent 30%, rgba(37, 99, 235, 0.05) 50%, transparent 70%);
+          transform: rotate(45deg);
+          transition: all 0.6s ease;
+          opacity: 0;
+        }
+
+        .stat-card:hover::before {
+          opacity: 1;
+          transform: rotate(45deg) translate(20px, 20px);
+          animation: sparkle 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+          0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.05);
+            opacity: 0.8;
+          }
+        }
+        
+        @keyframes slideInFromBottom {
+          from {
+            opacity: 0;
+            transform: translateY(40px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes shimmer {
+          0% {
+            background-position: -1000px 0;
+          }
+          100% {
+            background-position: 1000px 0;
+          }
+        }
+        
+        @keyframes glow {
+          0%, 100% {
+            box-shadow: 0 0 20px rgba(37, 99, 235, 0.3);
+          }
+          50% {
+            box-shadow: 0 0 30px rgba(37, 99, 235, 0.5);
+          }
+        }
+        
+        @keyframes countUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes growUp {
+          from {
+            transform: scaleY(0);
+          }
+          to {
+            transform: scaleY(1);
           }
         }
       `}</style>
