@@ -109,14 +109,39 @@ const checkboxStyle = {
   verticalAlign: 'middle'
 };
 
+const trimValue = (value) => (typeof value === 'string' ? value.trim() : value);
+
+const validateField = (value, fieldName, rules) => {
+  const trimmedValue = trimValue(value);
+  const errors = [];
+
+  for (const rule of rules) {
+    const error = rule(trimmedValue, fieldName);
+    if (error) errors.push(error);
+  }
+
+  return errors.join(' ');
+};
+
+const validateTextField = (value, fieldName, minLength, maxLength, allowedChars = null, fieldNameDisplay = fieldName) => {
+  const rules = [
+    (val) => !val && `${fieldNameDisplay} is required`,
+    (val) => val && val.length < minLength && `${fieldNameDisplay} must be at least ${minLength} characters`,
+    (val) => val && val.length > maxLength && `${fieldNameDisplay} cannot exceed ${maxLength} characters`,
+    (val) => val && allowedChars && !allowedChars.test(val) && `${fieldNameDisplay} contains invalid characters`,
+    (val) => val && /^\s/.test(val) && `${fieldNameDisplay} cannot start with a space`,
+    (val) => val && /\s$/.test(val) && `${fieldNameDisplay} cannot end with a space`,
+  ];
+
+  return validateField(value, fieldName, rules);
+};
+
 export default function CreateEvent() {
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
   const navigate = useNavigate();
-
-  const trimValue = (value) => value.trim();
 
   const getFieldStyle = (fieldName, baseStyle) => ({
     ...baseStyle,
@@ -144,6 +169,12 @@ export default function CreateEvent() {
       newErrors.title = 'Event title must be at least 3 characters';
     } else if (title.length > 100) {
       newErrors.title = 'Event title cannot exceed 100 characters';
+    } else if (!/^[a-zA-Z0-9\s\-_.,&()]+$/.test(title)) {
+      newErrors.title = 'Event title can only contain letters, numbers, spaces, and basic punctuation (-_.,&())';
+    } else if (/^\s/.test(title)) {
+      newErrors.title = 'Event title cannot start with a space';
+    } else if (/\s$/.test(title)) {
+      newErrors.title = 'Event title cannot end with a space';
     }
 
     if (!description) {
@@ -158,18 +189,36 @@ export default function CreateEvent() {
       newErrors.venue = 'Venue is required';
     } else if (venue.length < 2) {
       newErrors.venue = 'Venue must be at least 2 characters';
+    } else if (venue.length > 200) {
+      newErrors.venue = 'Venue cannot exceed 200 characters';
+    } else if (!/^[a-zA-Z0-9\s\-'.,&()]+$/.test(venue)) {
+      newErrors.venue = 'Venue can only contain letters, numbers, spaces, and basic punctuation (-\'.,&())';
+    } else if (/^\s/.test(venue)) {
+      newErrors.venue = 'Venue cannot start with a space';
+    } else if (/\s$/.test(venue)) {
+      newErrors.venue = 'Venue cannot end with a space';
     }
 
     if (department && department.length > 100) {
       newErrors.department = 'Department cannot exceed 100 characters';
+    } else if (department && !/^[a-zA-Z0-9\s\-'.&]+$/.test(department)) {
+      newErrors.department = 'Department can only contain letters, numbers, spaces, and basic punctuation (-\'.&)';
+    } else if (department && /^\s/.test(department)) {
+      newErrors.department = 'Department cannot start with a space';
+    } else if (department && /\s$/.test(department)) {
+      newErrors.department = 'Department cannot end with a space';
     }
 
     if (!form.date) {
       newErrors.date = 'Start date and time is required';
     } else {
       const startDate = new Date(form.date);
+      const now = new Date();
+      
       if (Number.isNaN(startDate.getTime())) {
         newErrors.date = 'Please enter a valid start date and time';
+      } else if (startDate < now) {
+        newErrors.date = 'Start date and time cannot be in the past';
       }
     }
 
@@ -200,6 +249,12 @@ export default function CreateEvent() {
       newErrors.organizerName = 'Organizer name must be at least 2 characters';
     } else if (organizerName.length > 100) {
       newErrors.organizerName = 'Organizer name cannot exceed 100 characters';
+    } else if (!/^[a-zA-Z\s\-'.]+$/.test(organizerName)) {
+      newErrors.organizerName = 'Organizer name can only contain letters, spaces, hyphens, apostrophes, and periods';
+    } else if (/^\s/.test(organizerName)) {
+      newErrors.organizerName = 'Organizer name cannot start with a space';
+    } else if (/\s$/.test(organizerName)) {
+      newErrors.organizerName = 'Organizer name cannot end with a space';
     }
 
     if (!societyName) {
@@ -208,6 +263,12 @@ export default function CreateEvent() {
       newErrors.societyName = 'Society name must be at least 2 characters';
     } else if (societyName.length > 100) {
       newErrors.societyName = 'Society name cannot exceed 100 characters';
+    } else if (!/^[a-zA-Z0-9\s\-'.&]+$/.test(societyName)) {
+      newErrors.societyName = 'Society name can only contain letters, numbers, spaces, and basic punctuation (-\'.&)';
+    } else if (/^\s/.test(societyName)) {
+      newErrors.societyName = 'Society name cannot start with a space';
+    } else if (/\s$/.test(societyName)) {
+      newErrors.societyName = 'Society name cannot end with a space';
     }
 
     if (!phoneNumbers) {
@@ -215,29 +276,52 @@ export default function CreateEvent() {
     } else {
       const phoneList = phoneNumbers
         .split(',')
-        .map((p) => p.trim())
+        .map((phone) => trimValue(phone))
         .filter(Boolean);
 
       if (phoneList.length === 0) {
         newErrors.phoneNumbers = 'Please enter at least one phone number';
       } else {
-        const invalidPhone = phoneList.find(
-          (phone) => !/^[+\d\s\-()]{7,20}$/.test(phone)
-        );
+        const invalidPhone = phoneList.find((phone) => {
+          const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+          const sriLankanMobileRegex = /^(?:\+94|0|94)?7[0-9]{8}$/;
+          const sriLankanLandlineRegex = /^(?:011[0-9]{7}|0[2-9][0-9]{8})$/;
+          return !sriLankanMobileRegex.test(cleanPhone) && !sriLankanLandlineRegex.test(cleanPhone);
+        });
 
         if (invalidPhone) {
           newErrors.phoneNumbers =
-            'Each phone number must contain only digits, spaces, +, hyphens, or parentheses and be 7-20 characters long';
+            'Please enter valid Sri Lankan phone numbers (e.g., 07XXXXXXXX, +947XXXXXXXX, or 011XXXXXXX for landlines)';
         }
       }
     }
 
     if (organizerEmail) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(organizerEmail)) {
-        newErrors.organizerEmail = 'Please enter a valid email address';
-      } else if (organizerEmail.length > 150) {
+      // Enhanced email validation
+      const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+      const cleanEmail = organizerEmail.trim().toLowerCase();
+      
+      if (!emailRegex.test(cleanEmail)) {
+        newErrors.organizerEmail = 'Please enter a valid email address (e.g., name@domain.com)';
+      } else if (cleanEmail.length > 150) {
         newErrors.organizerEmail = 'Email address is too long';
+      } else if (cleanEmail.startsWith('.') || cleanEmail.endsWith('.')) {
+        newErrors.organizerEmail = 'Email address cannot start or end with a dot';
+      } else if (cleanEmail.includes('..')) {
+        newErrors.organizerEmail = 'Email address cannot contain consecutive dots';
+      } else if (!cleanEmail.includes('@')) {
+        newErrors.organizerEmail = 'Email address must contain @ symbol';
+      } else {
+        const [localPart, domain] = cleanEmail.split('@');
+        if (localPart.length === 0) {
+          newErrors.organizerEmail = 'Email address must have text before @ symbol';
+        } else if (domain.length === 0) {
+          newErrors.organizerEmail = 'Email address must have text after @ symbol';
+        } else if (!domain.includes('.')) {
+          newErrors.organizerEmail = 'Email domain must contain a dot (e.g., .com, .lk)';
+        } else if (localPart.length > 64) {
+          newErrors.organizerEmail = 'Email username is too long';
+        }
       }
     }
 
