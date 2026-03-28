@@ -131,7 +131,7 @@ export default function ContactUs() {
 
           <div className="faq-grid">
             <div className="faq-category">
-              <div className="category-icon">🎯</div>
+              <div className="category-icon"></div>
               <h3>Getting Started</h3>
               <div className="faq-items">
                 <div className="faq-item" data-faq-id="1">
@@ -165,7 +165,7 @@ export default function ContactUs() {
             </div>
 
             <div className="faq-category">
-              <div className="category-icon">⏰</div>
+              <div className="category-icon"></div>
               <h3>Event Management</h3>
               <div className="faq-items">
                 <div className="faq-item" data-faq-id="3">
@@ -199,7 +199,7 @@ export default function ContactUs() {
             </div>
 
             <div className="faq-category">
-              <div className="category-icon">🔧</div>
+              <div className="category-icon"></div>
               <h3>Technical Support</h3>
               <div className="faq-items">
                 <div className="faq-item" data-faq-id="5">
@@ -221,7 +221,7 @@ export default function ContactUs() {
 
           <div className="faq-footer">
             <div className="faq-help-card">
-              <div className="help-icon">💬</div>
+              <div className="help-icon"></div>
               <div className="help-content">
                 <h4>Still have questions?</h4>
                 <p>Can't find what you're looking for? Our support team is here to help.</p>
