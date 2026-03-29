@@ -1,8 +1,17 @@
 import React, { useEffect } from 'react';
+import { Fragment } from 'react';
 import { Helmet } from 'react-helmet';
-import Header from './Header';
-import Footer from './Footer';
+import Header from '../Header';
+import Footer from '../Footer';
 import { Link } from 'react-router-dom';
+import slide01 from '../../assets/images/slide-01.jpg';
+import slide02 from '../../assets/images/slide-02.jpg';
+import slide03 from '../../assets/images/slide-03.jpg';
+import calcImg from '../../assets/images/calculator-image.png';
+import test01 from '../../assets/images/testimonials-01.jpg';
+import test02 from '../../assets/images/testimonials-02.jpg';
+import test03 from '../../assets/images/testimonial-03.jpeg';
+import '../../assets/css/testimonials-fix.css';
 
 export default function Home() {
   useEffect(() => {
@@ -72,25 +81,7 @@ export default function Home() {
       initSwiper();
     }
 
-    const initOwlCarousel = () => {
-      if (window.jQuery && window.jQuery.fn.owlCarousel) {
-        try {
-          window.jQuery('.owl-testimonials').owlCarousel({
-            items: 1,
-            loop: true,
-            autoplay: true,
-            autoplayTimeout: 6000,
-            dots: true,
-            nav: false
-          });
-          console.log('OWL Carousel initialized');
-        } catch (error) {
-          console.error('Error initializing OWL Carousel:', error);
-        }
-      }
-    };
-
-    setTimeout(initOwlCarousel, 500);
+    // Testimonials section now uses static cards with animations, no carousel needed
 
     if (window.jQuery) {
       try {
@@ -116,7 +107,7 @@ export default function Home() {
   }, []);
 
   return (
-    <>
+    <Fragment>
       <Helmet>
         <title>EventSync - Campus Event Management Platform</title>
         <meta
@@ -134,7 +125,7 @@ export default function Home() {
           <div className="swiper-slide">
             <div
               className="slide-inner"
-              style={{ backgroundImage: 'url(/assets/images/slide-01.jpg)' }}
+              style={{ backgroundImage: `url(${slide01})` }}
             >
               <div className="container">
                 <div className="row">
@@ -149,9 +140,7 @@ export default function Home() {
                       <p>
                         EventSync is a Campus Event Management & Sponsorship Platform designed for
                         SLIIT. Organizers can create, edit, and submit events for approval while
-                        administrators control the full event lifecycle from Draft → Pending →
-                        Approved → Completed. Only approved events become visible to students,
-                        ensuring structured campus activities.
+                        administrators control the full event lifecycle.
                       </p>
                       <div className="buttons">
                         <div className="green-button">
@@ -172,7 +161,7 @@ export default function Home() {
           <div className="swiper-slide">
             <div
               className="slide-inner"
-              style={{ backgroundImage: 'url(/assets/images/slide-02.jpg)' }}
+              style={{ backgroundImage: `url(${slide02})` }}
             >
               <div className="container">
                 <div className="row">
@@ -210,7 +199,7 @@ export default function Home() {
           <div className="swiper-slide">
             <div
               className="slide-inner"
-              style={{ backgroundImage: 'url(/assets/images/slide-03.jpg)' }}
+              style={{ backgroundImage: `url(${slide03})` }}
             >
               <div className="container">
                 <div className="row">
@@ -500,192 +489,495 @@ export default function Home() {
           </div>
         </div>
       </section>
-<section className="calculator">
-  <div className="container">
-    <div className="row align-items-center">
-      <div className="col-lg-7">
-        <div className="left-image">
-          <img
-            src="/assets/images/calculator-image.png"
-            alt="EventSync Support"
-          />
-        </div>
-      </div>
-
-      <div className="col-lg-5">
-        <div
-          style={{
-            background: 'rgba(10, 20, 45, 0.78)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            padding: '35px',
-            borderRadius: '20px',
-            border: '1px solid rgba(255,255,255,0.12)',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.25)'
-          }}
-        >
-          <div className="section-heading" style={{ marginBottom: '20px' }}>
-            <h6 style={{ color: '#ff6b35', marginBottom: '10px' }}>
-              EventSync Support
-            </h6>
-            <h4
-              style={{
-                color: '#ffffff',
-                fontSize: 'clamp(30px, 4vw, 52px)',
-                lineHeight: '1.15',
-                fontWeight: '700',
-                marginBottom: '20px'
-              }}
-            >
-              Making Campus Event Management Easier
-            </h4>
-          </div>
-
-          <p
-            style={{
-              color: 'rgba(255,255,255,0.88)',
-              fontSize: '16px',
-              lineHeight: '1.9',
-              marginBottom: '24px'
-            }}
-          >
-            EventSync helps students, clubs, and university organizers manage
-            campus events through a smooth and organized digital platform. From
-            event creation to approval workflows, the system simplifies every
-            step of planning and coordination.
-          </p>
-
-          <div style={{ marginBottom: '22px' }}>
-            <h6
-              style={{
-                color: '#ffffff',
-                fontSize: '18px',
-                fontWeight: '700',
-                marginBottom: '12px'
-              }}
-            >
-              What EventSync Supports
-            </h6>
-
-            <ul
-              style={{
-                color: 'rgba(255,255,255,0.9)',
-                paddingLeft: '20px',
-                marginBottom: 0,
-                lineHeight: '2'
-              }}
-            >
-              <li>Event creation and submission</li>
-              <li>Approval and review management</li>
-              <li>Venue coordination</li>
-              <li>Sponsorship planning</li>
-              <li>Registration and attendance tracking</li>
-            </ul>
-          </div>
-
-          <div style={{ marginBottom: '25px' }}>
-            <h6
-              style={{
-                color: '#ffffff',
-                fontSize: '18px',
-                fontWeight: '700',
-                marginBottom: '12px'
-              }}
-            >
-              Why Use EventSync
-            </h6>
-
-            <p
-              style={{
-                color: 'rgba(255,255,255,0.88)',
-                fontSize: '15px',
-                lineHeight: '1.8',
-                marginBottom: 0
-              }}
-            >
-              With a centralized dashboard, EventSync improves communication
-              between students and administrators while making events easier to
-              review, schedule, and manage efficiently.
-            </p>
-          </div>
-
-          <a href="/events" className="orange-button">
-            Explore Events
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-      <section className="testimonials" id="testimonials">
+      <section className="calculator">
         <div className="container">
-          <div className="row">
-            <div className="col-lg-6 offset-lg-3">
-              <div className="section-heading">
-                <h6>User Feedback</h6>
-                <h4>What Our Users Say</h4>
+          <div className="row align-items-center">
+            <div className="col-lg-7">
+              <div className="left-image">
+                <img
+                  src={calcImg}
+                  alt="EventSync Support"
+                />
               </div>
             </div>
-            <div className="col-lg-10 offset-lg-1">
+
+            <div className="col-lg-5">
               <div
-                className="owl-testimonials owl-carousel"
-                style={{ position: 'relative', zIndex: 5 }}
+                style={{
+                  background: 'rgba(10, 20, 45, 0.78)',
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                  padding: '35px',
+                  borderRadius: '20px',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.25)'
+                }}
               >
-                <div className="item">
-                  <i className="fa fa-quote-left" />
-                  <p>
-                    "EventSync has completely streamlined our event approval process. Managing
-                    Draft, Pending, and Approved stages is now structured and transparent. It has
-                    reduced confusion between organizers and admins."
-                  </p>
-                  <h4>Faculty Event Coordinator</h4>
-                  <span>SLIIT Administration</span>
-                  <div className="right-image">
-                    <img
-                      src="/assets/images/testimonials-02.jpg"
-                      alt="Faculty Coordinator"
-                    />
-                  </div>
+                <div className="section-heading" style={{ marginBottom: '20px' }}>
+                  <h6 style={{ color: '#ff6b35', marginBottom: '10px' }}>
+                    EventSync Support
+                  </h6>
+                  <h4
+                    style={{
+                      color: '#ffffff',
+                      fontSize: 'clamp(30px, 4vw, 52px)',
+                      lineHeight: '1.15',
+                      fontWeight: '700',
+                      marginBottom: '20px'
+                    }}
+                  >
+                    Making Campus Event Management Easier
+                  </h4>
                 </div>
 
-                <div className="item">
-                  <i className="fa fa-quote-left" />
-                  <p>
-                    "The QR-based attendance system is fast and secure. It prevents duplicate
-                    entries and automatically tracks participation data. The analytics dashboard
-                    gives us clear insights after every event."
-                  </p>
-                  <h4>Student Organizer</h4>
-                  <span>IEEE Student Branch</span>
-                  <div className="right-image">
-                    <img
-                      src="/assets/images/testimonial-03.jpeg"
-                      alt="Student Organizer"
-                    />
-                  </div>
+                <p
+                  style={{
+                    color: 'rgba(255,255,255,0.88)',
+                    fontSize: '16px',
+                    lineHeight: '1.9',
+                    marginBottom: '24px'
+                  }}
+                >
+                  EventSync helps students, clubs, and university organizers manage
+                  campus events through a smooth and organized digital platform. From
+                  event creation to approval workflows, the system simplifies every
+                  step of planning and coordination.
+                </p>
+
+                <div style={{ marginBottom: '22px' }}>
+                  <h6
+                    style={{
+                      color: '#ffffff',
+                      fontSize: '18px',
+                      fontWeight: '700',
+                      marginBottom: '12px'
+                    }}
+                  >
+                    What EventSync Supports
+                  </h6>
+
+                  <ul
+                    style={{
+                      color: 'rgba(255,255,255,0.9)',
+                      paddingLeft: '20px',
+                      marginBottom: 0,
+                      lineHeight: '2'
+                    }}
+                  >
+                    <li>Event creation and submission</li>
+                    <li>Approval and review management</li>
+                    <li>Venue coordination</li>
+                    <li>Sponsorship planning</li>
+                    <li>Registration and attendance tracking</li>
+                  </ul>
                 </div>
 
-                <div className="item">
-                  <i className="fa fa-quote-left" />
-                  <p>
-                    "Registration is simple and efficient. I can easily browse approved events,
-                    register without duplication issues, and access my QR code instantly. It makes
-                    campus participation more organized."
+                <div style={{ marginBottom: '25px' }}>
+                  <h6
+                    style={{
+                      color: '#ffffff',
+                      fontSize: '18px',
+                      fontWeight: '700',
+                      marginBottom: '12px'
+                    }}
+                  >
+                    Why Use EventSync
+                  </h6>
+
+                  <p
+                    style={{
+                      color: 'rgba(255,255,255,0.88)',
+                      fontSize: '15px',
+                      lineHeight: '1.8',
+                      marginBottom: 0
+                    }}
+                  >
+                    With a centralized dashboard, EventSync improves communication
+                    between students and administrators while making events easier to
+                    review, schedule, and manage efficiently.
                   </p>
-                  <h4>Undergraduate Student</h4>
-                  <span>SLIIT Participant</span>
-                  <div className="right-image">
-                    <img src="/assets/images/testimonials-01.jpg" alt="Student" />
-                  </div>
                 </div>
+
+                <a href="/events" className="orange-button">
+                  Explore Events
+                </a>
               </div>
             </div>
           </div>
         </div>
       </section>
 
+      <section className="testimonials" id="testimonials" style={{
+        background: '#ffffff',
+        padding: '80px 0',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <div className="container">
+          <div className="row">
+            <div className="col-lg-12">
+              <div className="section-heading text-center mb-5">
+                <h6 style={{
+                  color: '#2c3e50',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  letterSpacing: '2px',
+                  textTransform: 'uppercase',
+                  marginBottom: '15px'
+                }}>User Feedback</h6>
+                <h4 style={{
+                  color: '#2c3e50',
+                  fontSize: '36px',
+                  fontWeight: '700',
+                  marginBottom: '20px',
+                  position: 'relative'
+                }}>
+                  What Our Users Say
+                  <span style={{
+                    position: 'absolute',
+                    bottom: '-10px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: '60px',
+                    height: '4px',
+                    background: '#ff6b35',
+                    borderRadius: '2px'
+                  }}></span>
+                </h4>
+              </div>
+            </div>
+          </div>
+
+          <div className="row">
+            <div className="col-lg-4 col-md-6 mb-4">
+              <div className="testimonial-card" style={{
+                background: 'rgba(255, 255, 255, 0.95)',
+                padding: '30px',
+                borderRadius: '20px',
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+                height: '100%',
+                position: 'relative',
+                transition: 'all 0.3s ease',
+                transform: 'translateY(0)',
+                border: '1px solid rgba(255, 255, 255, 0.2)'
+              }}>
+                <div className="quote-icon" style={{
+                  position: 'absolute',
+                  top: '-15px',
+                  left: '20px',
+                  width: '40px',
+                  height: '40px',
+                  background: '#ff6b35',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ffffff',
+                  fontSize: '18px',
+                  boxShadow: '0 4px 12px rgba(255, 107, 53, 0.3)'
+                }}>
+                  <i className="fa fa-quote-left" />
+                </div>
+
+                <p style={{
+                  color: '#000000',
+                  fontSize: '16px',
+                  lineHeight: '1.8',
+                  marginBottom: '20px',
+                  fontStyle: 'italic',
+                  marginTop: '10px'
+                }}>
+                  "EventSync has completely streamlined our event approval process. Managing Draft, Pending, and Approved stages is now structured and transparent. It has reduced confusion between organizers and admins."
+                </p>
+
+                <div className="testimonial-author" style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '15px'
+                }}>
+                  <div className="author-image" style={{
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    border: '3px solid #ff6b35',
+                    boxShadow: '0 4px 12px rgba(255, 107, 53, 0.2)'
+                  }}>
+                    <img
+                      src={test02}
+                      alt="Faculty Coordinator"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        transition: 'transform 0.3s ease'
+                      }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                  <div className="author-info">
+                    <h5 style={{
+                      color: '#000000',
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      marginBottom: '5px',
+                      margin: '0'
+                    }}>Faculty Event Coordinator</h5>
+                    <span style={{
+                      color: '#ff6b35',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}>SLIIT Administration</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-lg-4 col-md-6 mb-4">
+              <div className="testimonial-card" style={{
+                background: 'rgba(255, 255, 255, 0.95)',
+                padding: '30px',
+                borderRadius: '20px',
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+                height: '100%',
+                position: 'relative',
+                transition: 'all 0.3s ease',
+                transform: 'translateY(0)',
+                border: '1px solid rgba(255, 255, 255, 0.2)'
+              }}>
+                <div className="quote-icon" style={{
+                  position: 'absolute',
+                  top: '-15px',
+                  left: '20px',
+                  width: '40px',
+                  height: '40px',
+                  background: '#ff6b35',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ffffff',
+                  fontSize: '18px',
+                  boxShadow: '0 4px 12px rgba(255, 107, 53, 0.3)'
+                }}>
+                  <i className="fa fa-quote-left" />
+                </div>
+
+                <p style={{
+                  color: '#000000',
+                  fontSize: '16px',
+                  lineHeight: '1.8',
+                  marginBottom: '20px',
+                  fontStyle: 'italic',
+                  marginTop: '10px'
+                }}>
+                  "The QR-based attendance system is fast and secure. It prevents duplicate entries and automatically tracks participation data. The analytics dashboard gives us clear insights after every event."
+                </p>
+
+                <div className="testimonial-author" style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '15px'
+                }}>
+                  <div className="author-image" style={{
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    border: '3px solid #ff6b35',
+                    boxShadow: '0 4px 12px rgba(255, 107, 53, 0.2)'
+                  }}>
+                    <img
+                      src={test03}
+                      alt="Student Organizer"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        transition: 'transform 0.3s ease'
+                      }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                  <div className="author-info">
+                    <h5 style={{
+                      color: '#000000',
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      marginBottom: '5px',
+                      margin: '0'
+                    }}>Student Organizer</h5>
+                    <span style={{
+                      color: '#ff6b35',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}>IEEE Student Branch</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-lg-4 col-md-6 mb-4">
+              <div className="testimonial-card" style={{
+                background: 'rgba(255, 255, 255, 0.95)',
+                padding: '30px',
+                borderRadius: '20px',
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+                height: '100%',
+                position: 'relative',
+                transition: 'all 0.3s ease',
+                transform: 'translateY(0)',
+                border: '1px solid rgba(255, 255, 255, 0.2)'
+              }}>
+                <div className="quote-icon" style={{
+                  position: 'absolute',
+                  top: '-15px',
+                  left: '20px',
+                  width: '40px',
+                  height: '40px',
+                  background: '#ff6b35',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ffffff',
+                  fontSize: '18px',
+                  boxShadow: '0 4px 12px rgba(255, 107, 53, 0.3)'
+                }}>
+                  <i className="fa fa-quote-left" />
+                </div>
+
+                <p style={{
+                  color: '#ffffff',
+                  fontSize: '16px',
+                  lineHeight: '1.8',
+                  marginBottom: '20px',
+                  fontStyle: 'italic',
+                  marginTop: '10px'
+                }}>
+                  "Registration is simple and efficient. I can easily browse approved events, register without duplication issues, and access my QR code instantly. It makes campus participation more organized."
+                </p>
+
+                <div className="testimonial-author" style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '15px'
+                }}>
+                  <div className="author-image" style={{
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    border: '3px solid #ff6b35',
+                    boxShadow: '0 4px 12px rgba(255, 107, 53, 0.2)'
+                  }}>
+                    <img
+                      src={test01}
+                      alt="Student"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        transition: 'transform 0.3s ease'
+                      }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                  <div className="author-info">
+                    <h5 style={{
+                      color: '#ffffff',
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      marginBottom: '5px',
+                      margin: '0'
+                    }}>Undergraduate Student</h5>
+                    <span style={{
+                      color: '#ff6b35',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}>SLIIT Participant</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Animated background elements */}
+        <div className="testimonial-bg-elements" style={{
+          position: 'absolute',
+          top: '0',
+          left: '0',
+          width: '100%',
+          height: '100%',
+          pointerEvents: 'none',
+          overflow: 'hidden'
+        }}>
+          <div className="floating-element" style={{
+            position: 'absolute',
+            top: '10%',
+            left: '10%',
+            width: '80px',
+            height: '80px',
+            background: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '50%',
+            animation: 'float 6s ease-in-out infinite'
+          }}></div>
+          <div className="floating-element" style={{
+            position: 'absolute',
+            top: '60%',
+            right: '15%',
+            width: '60px',
+            height: '60px',
+            background: 'rgba(255, 255, 255, 0.08)',
+            borderRadius: '50%',
+            animation: 'float 8s ease-in-out infinite 2s'
+          }}></div>
+          <div className="floating-element" style={{
+            position: 'absolute',
+            bottom: '20%',
+            left: '20%',
+            width: '40px',
+            height: '40px',
+            background: 'rgba(255, 255, 255, 0.06)',
+            borderRadius: '50%',
+            animation: 'float 7s ease-in-out infinite 1s'
+          }}></div>
+        </div>
+      </section>
+
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-20px) rotate(180deg);
+          }
+        }
+        
+        .testimonial-card:hover {
+          transform: translateY(-10px) !important;
+          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15) !important;
+        }
+        
+        .testimonial-card:hover .author-image img {
+          transform: scale(1.1) !important;
+        }
+        
+        .testimonial-card:hover .quote-icon {
+          transform: rotate(360deg) !important;
+          transition: transform 0.6s ease !important;
+        }
+      `}</style>
+
       <Footer />
-    </>
+    </Fragment>
   );
 }

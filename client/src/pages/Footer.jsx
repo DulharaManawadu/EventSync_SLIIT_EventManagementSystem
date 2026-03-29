@@ -1,5 +1,6 @@
    import React from 'react';
 import { Link } from 'react-router-dom';
+import logoImg from '../assets/images/logo.png';
 
 export default function Footer() {
      return (   
@@ -42,7 +43,7 @@ export default function Footer() {
                           marginBottom: '15px'
                         }}>
                           <img 
-                            src="/assets/images/logo.png" 
+                            src={logoImg} 
                             alt="EventSync"
                             style={{
                               height: '40px',

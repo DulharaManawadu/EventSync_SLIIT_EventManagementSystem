@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import logoImg from '../assets/images/logo.png';
 
 export default function Header() {
   return (
@@ -9,7 +10,7 @@ export default function Header() {
           <div className="col-12">
             <nav className="main-nav">
               <Link to="/" className="logo">
-                <img src="/assets/images/logo.png" alt="" />
+                <img src={logoImg} alt="EventSync Logo" />
               </Link>
               <ul className="nav">
                 <li className="scroll-to-section">

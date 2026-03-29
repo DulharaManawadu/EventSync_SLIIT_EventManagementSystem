@@ -1,7 +1,11 @@
 import React, { useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import Header from './Header';
-import Footer from './Footer';
+import { Link } from 'react-router-dom';
+import srv1 from '../../assets/images/service-image-01.jpeg';
+import srv2 from '../../assets/images/service-details-02.jpg';
+import srv3 from '../../assets/images/service-image-03.jpg';
+import Header from '../Header';
+import Footer from '../Footer';
 
 export default function OurServices() {
   useEffect(() => {
@@ -347,7 +351,7 @@ export default function OurServices() {
                 <div className="row">
                   <div className="col-lg-6">
                     <div className="left-image">
-                      <img src="assets/images/service-image-01.jpeg" alt="" />
+                      <img src={srv1} alt="Event Creation and Management Service" />
                     </div>
                   </div>
                   <div className="col-lg-6 align-self-center">
@@ -377,7 +381,7 @@ export default function OurServices() {
                   </div>
                   <div className="col-lg-6">
                     <div className="right-image">
-                      <img src="assets/images/service-image-02.jpg" alt="" />
+                      <img src={srv2} alt="QR-Based Attendance Tracking Service" />
                     </div>
                   </div>
                 </div>
@@ -389,7 +393,7 @@ export default function OurServices() {
                 <div className="row">
                   <div className="col-lg-6">
                     <div className="left-image">
-                      <img src="assets/images/service-image-03.jpg" alt="" />
+                      <img src={srv3} alt="Event Analytics and Insights Service" />
                     </div>
                   </div>
                   <div className="col-lg-6 align-self-center">
@@ -468,7 +472,7 @@ export default function OurServices() {
                         <li className="active">
                           <div style={{display: 'flex', gap: '40px', padding: '30px', background: 'white', borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)'}}>
                             <div style={{flex: '0 0 45%'}}>
-                              <img src="/assets/images/service-image-01.jpeg" alt="" style={{width: '100%', height: '250px', objectFit: 'cover', borderRadius: '10px'}} />
+                              <img src={srv1} alt="" style={{width: '100%', height: '250px', objectFit: 'cover', borderRadius: '10px'}} />
                             </div>
                             <div style={{flex: '1', padding: '10px 0'}}>
                               <h4 style={{fontSize: '20px', marginBottom: '15px', color: '#2d3748'}}>Streamlined Event Approval Process</h4>
@@ -485,7 +489,7 @@ export default function OurServices() {
                         <li>
                           <div style={{display: 'flex', gap: '40px', padding: '30px', background: 'white', borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)'}}>
                             <div style={{flex: '0 0 45%'}}>
-                              <img src="/assets/images/service-details-02.jpg" alt="" style={{width: '100%', height: '250px', objectFit: 'cover', borderRadius: '10px'}} />
+                              <img src={srv2} alt="" style={{width: '100%', height: '250px', objectFit: 'cover', borderRadius: '10px'}} />
                             </div>
                             <div style={{flex: '1', padding: '10px 0'}}>
                               <h4 style={{fontSize: '20px', marginBottom: '15px', color: '#2d3748'}}>Real-Time QR Attendance System</h4>
@@ -502,7 +506,7 @@ export default function OurServices() {
                         <li>
                           <div style={{display: 'flex', gap: '40px', padding: '30px', background: 'white', borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)'}}>
                             <div style={{flex: '0 0 45%'}}>
-                              <img src="/assets/images/service-image-03.jpg" alt="" style={{width: '100%', height: '250px', objectFit: 'cover', borderRadius: '10px'}} />
+                              <img src={srv3} alt="" style={{width: '100%', height: '250px', objectFit: 'cover', borderRadius: '10px'}} />
                             </div>
                             <div style={{flex: '1', padding: '10px 0'}}>
                               <h4 style={{fontSize: '20px', marginBottom: '15px', color: '#2d3748'}}>Advanced Analytics & Reporting</h4>

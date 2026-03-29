@@ -14,23 +14,7 @@
 	  }
 	});
 	
-	$('.filters ul li').click(function(){
-        $('.filters ul li').removeClass('active');
-        $(this).addClass('active');
-          
-          var data = $(this).attr('data-filter');
-          $grid.isotope({
-            filter: data
-          })
-        });
 
-        var $grid = $(".grid").isotope({
-          itemSelector: ".all",
-          percentPosition: true,
-          masonry: {
-            columnWidth: ".all"
-          }
-        })
 
 
 	const Accordion = {
@@ -160,6 +144,7 @@
 	// Menu elevator animation
 	$('.scroll-to-section a[href*=\\#]:not([href=\\#])').on('click', function() {
 		if (location.pathname.replace(/^\//,'') == this.pathname.replace(/^\//,'') && location.hostname == this.hostname) {
+			if (!this.hash || this.hash === "#") return; // Prevent jQuery parse error
 			var target = $(this.hash);
 			target = target.length ? target : $('[name=' + this.hash.slice(1) +']');
 			if (target.length) {
@@ -191,7 +176,10 @@
 	      
 	        var target = this.hash,
 	        menu = target;
+	        if (!this.hash || this.hash === "#") return; // Prevent jQuery from parsing an empty # selector
 	       	var target = $(this.hash);
+	        if (!target.length) return; // Wait! If target doesn't exist, do nothing!
+	        
 	        $('html, body').stop().animate({
 	            scrollTop: (target.offset().top) - 79
 	        }, 500, 'swing', function () {
@@ -205,7 +193,12 @@
 	    var scrollPos = $(document).scrollTop();
 	    $('.nav a').each(function () {
 	        var currLink = $(this);
-	        var refElement = $(currLink.attr("href"));
+	        var href = currLink.attr("href");
+	        if (!href || href === "#" || href.charAt(0) !== '#') return;
+	        
+	        var refElement = $(href);
+	        if (!refElement.length) return;
+	        
 	        if (refElement.position().top <= scrollPos && refElement.position().top + refElement.height() > scrollPos) {
 	            $('.nav ul li a').removeClass("active");
 	            currLink.addClass("active");
@@ -275,15 +268,17 @@
     }
 
 
-	function visible(partial) {
-        var $t = partial,
-            $w = jQuery(window),
+	    function visible(partial) {
+        var $t = partial;
+        if (!$t || !$t.length) return false;
+
+        var $w = jQuery(window),
             viewTop = $w.scrollTop(),
             viewBottom = viewTop + $w.height(),
             _top = $t.offset().top,
             _bottom = _top + $t.height(),
-            compareTop = partial === true ? _bottom : _top,
-            compareBottom = partial === true ? _top : _bottom;
+            compareTop = _top,
+            compareBottom = _bottom;
 
         return ((compareBottom <= viewBottom) && (compareTop >= viewTop) && $t.is(':visible'));
 

@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import Header from './Header';
-import Footer from './Footer';
+import Header from '../Header';
+import Footer from '../Footer';
 import { Link } from 'react-router-dom';
+import aboutImg from '../../assets/images/about-left-image.jpeg';
 
 export default function About() {
   useEffect(() => {
@@ -69,7 +70,7 @@ export default function About() {
           <div className="row">
             <div className="col-lg-6">
               <div className="left-image">
-                <img src="/assets/images/about-left-image.jpeg" alt="" />
+                <img src={aboutImg} alt="" />
               </div>
             </div>
             <div className="col-lg-6 align-self-center">

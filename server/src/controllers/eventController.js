@@ -772,6 +772,330 @@ async function deleteEvent(req, res) {
   }
 }
 
+/**
+ * Advanced Analytics with date filtering
+ * GET /api/events/analytics/advanced?startDate=...&endDate=...
+ */
+async function advancedAnalytics(req, res) {
+  try {
+    const { startDate, endDate } = req.query;
+    const now = new Date();
+
+    // Build match filter for date range
+    const matchStage = {};
+    if (startDate || endDate) {
+      matchStage.date = {};
+      if (startDate) {
+        matchStage.date.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        matchStage.date.$lte = end;
+      }
+    }
+
+    // Run all aggregations in parallel
+    const [
+      totalEvents,
+      upcomingCount,
+      statusBreakdown,
+      categoryBreakdown,
+      facultyBreakdown,
+      monthlyTrend,
+      capacityStats,
+      budgetStats,
+      eventTypeBreakdown,
+      // New analytics
+      societyBreakdown,
+      venueBreakdown,
+      sponsorshipStats,
+      budgetByCategory,
+      tagStats,
+      eventDurationStats,
+      qrStats,
+      featuredCount,
+      topEventsByCapacity,
+      budgetByFaculty,
+      monthlyBudgetTrend
+    ] = await Promise.all([
+      Event.countDocuments(matchStage),
+
+      Event.countDocuments({
+        ...matchStage,
+        ...(matchStage.date
+          ? { date: { ...matchStage.date, $gte: now > (matchStage.date.$gte || new Date(0)) ? now : matchStage.date.$gte } }
+          : { date: { $gte: now } })
+      }),
+
+      Event.aggregate([
+        { $match: matchStage },
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ]),
+
+      Event.aggregate([
+        { $match: matchStage },
+        { $group: { _id: '$category', count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ]),
+
+      Event.aggregate([
+        { $match: matchStage },
+        { $group: { _id: '$faculty', count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ]),
+
+      Event.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: { year: { $year: '$date' }, month: { $month: '$date' } },
+            count: { $sum: 1 },
+            totalBudget: { $sum: '$budget' },
+            totalCapacity: { $sum: '$capacity' }
+          }
+        },
+        { $sort: { '_id.year': 1, '_id.month': 1 } }
+      ]),
+
+      Event.aggregate([
+        { $match: matchStage },
+        { $group: { _id: null, total: { $sum: '$capacity' } } }
+      ]),
+
+      Event.aggregate([
+        { $match: matchStage },
+        { $group: { _id: null, total: { $sum: '$budget' }, avg: { $avg: '$budget' }, max: { $max: '$budget' }, min: { $min: '$budget' } } }
+      ]),
+
+      Event.aggregate([
+        { $match: matchStage },
+        { $group: { _id: '$eventType', count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ]),
+
+      // Events by society/club
+      Event.aggregate([
+        { $match: matchStage },
+        { $group: { _id: '$societyName', count: { $sum: 1 }, totalBudget: { $sum: '$budget' }, totalCapacity: { $sum: '$capacity' } } },
+        { $sort: { count: -1 } }
+      ]),
+
+      // Events by venue (top 10)
+      Event.aggregate([
+        { $match: matchStage },
+        { $group: { _id: '$venue', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 10 }
+      ]),
+
+      // Sponsorship statistics
+      Event.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: null,
+            totalEvents: { $sum: 1 },
+            sponsoredEvents: { $sum: { $cond: ['$sponsorshipEnabled', 1, 0] } },
+            nonSponsoredEvents: { $sum: { $cond: ['$sponsorshipEnabled', 0, 1] } }
+          }
+        }
+      ]),
+
+      // Budget by category
+      Event.aggregate([
+        { $match: matchStage },
+        { $group: { _id: '$category', totalBudget: { $sum: '$budget' }, count: { $sum: 1 }, avgBudget: { $avg: '$budget' } } },
+        { $sort: { totalBudget: -1 } }
+      ]),
+
+      // Tag frequency (unwind tags array)
+      Event.aggregate([
+        { $match: matchStage },
+        { $unwind: '$tags' },
+        { $group: { _id: '$tags', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 20 }
+      ]),
+
+      // Event duration stats (events with endDate)
+      Event.aggregate([
+        { $match: { ...matchStage, endDate: { $exists: true, $ne: null } } },
+        {
+          $project: {
+            durationHours: { $divide: [{ $subtract: ['$endDate', '$date'] }, 3600000] }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            avgDuration: { $avg: '$durationHours' },
+            maxDuration: { $max: '$durationHours' },
+            minDuration: { $min: '$durationHours' },
+            count: { $sum: 1 }
+          }
+        }
+      ]),
+
+      // QR-enabled events
+      Event.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: null,
+            qrEnabled: { $sum: { $cond: ['$qrEnabled', 1, 0] } },
+            qrDisabled: { $sum: { $cond: ['$qrEnabled', 0, 1] } },
+            checkInActive: { $sum: { $cond: ['$checkInActive', 1, 0] } }
+          }
+        }
+      ]),
+
+      // Featured events count
+      Event.countDocuments({ ...matchStage, isFeatured: true }),
+
+      // Top events by capacity (for event size analysis)
+      Event.find(matchStage)
+        .sort({ capacity: -1 })
+        .limit(10)
+        .select('title category faculty date capacity budget status venue societyName sponsorshipEnabled tags'),
+
+      // Budget by faculty
+      Event.aggregate([
+        { $match: matchStage },
+        { $group: { _id: '$faculty', totalBudget: { $sum: '$budget' }, count: { $sum: 1 }, avgBudget: { $avg: '$budget' } } },
+        { $sort: { totalBudget: -1 } }
+      ]),
+
+      // Monthly budget trend
+      Event.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: { year: { $year: '$date' }, month: { $month: '$date' } },
+            totalBudget: { $sum: '$budget' },
+            avgBudget: { $avg: '$budget' },
+            events: { $sum: 1 }
+          }
+        },
+        { $sort: { '_id.year': 1, '_id.month': 1 } }
+      ])
+    ]);
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    const formattedMonthlyTrend = monthlyTrend.map((item) => ({
+      month: monthNames[item._id.month - 1],
+      year: item._id.year,
+      label: `${monthNames[item._id.month - 1]} ${item._id.year}`,
+      events: item.count,
+      budget: item.totalBudget,
+      capacity: item.totalCapacity
+    }));
+
+    const formattedBudgetTrend = monthlyBudgetTrend.map((item) => ({
+      label: `${monthNames[item._id.month - 1]} ${item._id.year}`,
+      totalBudget: item.totalBudget,
+      avgBudget: Math.round(item.avgBudget),
+      events: item.events
+    }));
+
+    const totalCapacity = capacityStats[0]?.total || 0;
+    const totalBudget = budgetStats[0]?.total || 0;
+    const avgBudget = budgetStats[0]?.avg ? Math.round(budgetStats[0].avg) : 0;
+    const maxBudget = budgetStats[0]?.max || 0;
+    const pastEvents = totalEvents - upcomingCount;
+
+    const sponsorship = sponsorshipStats[0] || {};
+    const sponsorshipRate = totalEvents > 0
+      ? ((sponsorship.sponsoredEvents || 0) / totalEvents * 100).toFixed(1)
+      : '0.0';
+
+    const duration = eventDurationStats[0] || {};
+    const qr = qrStats[0] || {};
+
+    res.json({
+      success: true,
+      message: 'Advanced analytics retrieved successfully',
+      data: {
+        summary: {
+          totalEvents,
+          upcomingEvents: upcomingCount,
+          pastEvents,
+          totalCapacity,
+          totalBudget,
+          avgBudget,
+          maxBudget,
+          featuredEvents: featuredCount,
+          sponsoredEvents: sponsorship.sponsoredEvents || 0,
+          sponsorshipRate: parseFloat(sponsorshipRate),
+          qrEnabledEvents: qr.qrEnabled || 0,
+          avgEventDurationHours: duration.avgDuration ? parseFloat(duration.avgDuration.toFixed(1)) : 0,
+          maxEventDurationHours: duration.maxDuration ? parseFloat(duration.maxDuration.toFixed(1)) : 0
+        },
+        breakdown: {
+          byStatus: statusBreakdown.map((s) => ({ name: s._id || 'Unknown', value: s.count })),
+          byCategory: categoryBreakdown.map((c) => ({ name: c._id || 'Unknown', value: c.count })),
+          byFaculty: facultyBreakdown.map((f) => ({ name: f._id || 'Unknown', value: f.count })),
+          byEventType: eventTypeBreakdown.map((e) => ({ name: e._id || 'Unknown', value: e.count })),
+          bySociety: societyBreakdown.map((s) => ({
+            name: s._id || 'Unknown', value: s.count,
+            budget: s.totalBudget, capacity: s.totalCapacity
+          })),
+          byVenue: venueBreakdown.map((v) => ({ name: v._id || 'Unknown', value: v.count })),
+          sponsorship: {
+            sponsored: sponsorship.sponsoredEvents || 0,
+            nonSponsored: sponsorship.nonSponsoredEvents || 0,
+            rate: parseFloat(sponsorshipRate)
+          },
+          budgetByCategory: budgetByCategory.map((b) => ({
+            name: b._id || 'Unknown', budget: b.totalBudget,
+            count: b.count, avgBudget: Math.round(b.avgBudget)
+          })),
+          budgetByFaculty: budgetByFaculty.map((b) => ({
+            name: b._id || 'Unknown', budget: b.totalBudget,
+            count: b.count, avgBudget: Math.round(b.avgBudget)
+          })),
+          qrAdoption: [
+            { name: 'QR Enabled', value: qr.qrEnabled || 0 },
+            { name: 'QR Disabled', value: qr.qrDisabled || 0 }
+          ],
+          tags: tagStats.map((t) => ({ name: t._id, value: t.count }))
+        },
+        trends: {
+          monthly: formattedMonthlyTrend,
+          budgetMonthly: formattedBudgetTrend
+        },
+        topEvents: topEventsByCapacity.map((e) => ({
+          id: e._id,
+          title: e.title,
+          category: e.category,
+          faculty: e.faculty,
+          date: e.date,
+          capacity: e.capacity,
+          budget: e.budget,
+          status: e.status,
+          venue: e.venue,
+          society: e.societyName,
+          sponsored: e.sponsorshipEnabled,
+          tags: e.tags
+        })),
+        filters: {
+          startDate: startDate || null,
+          endDate: endDate || null
+        }
+      }
+    });
+  } catch (err) {
+    console.error('Advanced Analytics Error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error occurred while fetching advanced analytics',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+}
+
 module.exports = {
   createEvent,
   listEvents,
@@ -780,5 +1104,6 @@ module.exports = {
   deleteEvent,
   registerEvent,
   checkinEvent,
-  analytics
+  analytics,
+  advancedAnalytics
 };

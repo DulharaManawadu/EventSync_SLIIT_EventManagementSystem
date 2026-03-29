@@ -1,14 +1,14 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Home from './Home';
-import About from './About';
-import OurServices from './OurServices';
-import ContactUs from './ContactUs';
-import CreateEvent from './CreateEvent';
-import Events from './Events';
-import Analytics from './Analytics';
-import AdminDashboardAnalytics from './AdminDashboardAnalytics';
-import EventApproval from './EventApproval';
+import Home from './pages/staticpages/Home';
+import About from './pages/staticpages/About';
+import OurServices from './pages/staticpages/OurServices';
+import ContactUs from './pages/staticpages/ContactUs';
+import CreateEvent from './pages/events/CreateEvent';
+import Events from './pages/events/Events';
+import Analytics from './pages/admin/adminAnalytics/Analytics';
+import AdminDashboardAnalytics from './pages/admin/adminAnalytics/AdminDashboardAnalytics';
+import EventApproval from './pages/admin/adminEventDash/EventApproval';
 
 function App() {
   return (

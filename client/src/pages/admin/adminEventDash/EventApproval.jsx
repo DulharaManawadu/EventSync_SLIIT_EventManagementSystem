@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import AdminHeader from './AdminHeader';
-import Footer from './Footer';
+import AdminSidebar from '../AdminSidebar';
+
 
 const API_BASE = 'http://localhost:5000/api/events';
 
@@ -480,13 +480,14 @@ export default function EventApproval() {
         <title>Event Approval - EventSync Admin</title>
       </Helmet>
 
-      <AdminHeader />
+      <AdminSidebar />
+      <div style={{ marginLeft: '260px', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
 
 <div
   style={{
     background: 'linear-gradient(135deg, #0f172a 0%, #111827 50%, #1e293b 100%)',
     color: '#fff',
-    padding: '110px 0 42px', // increased top padding to push content below navbar
+    padding: '40px 0 42px', // adjusted top padding since no top navbar
     marginTop: '0'
   }}
 >
@@ -702,7 +703,8 @@ export default function EventApproval() {
         </div>
       )}
 
-      <Footer />
+
+      </div>
     </>
   );
 }

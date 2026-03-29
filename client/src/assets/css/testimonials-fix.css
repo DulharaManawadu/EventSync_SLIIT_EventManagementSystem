@@ -1,0 +1,157 @@
+/* Fix for testimonial images appearing in header */
+
+/* Hide testimonial images from header area */
+.header-area .owl-testimonials,
+.header-area .owl-testimonials .item,
+.header-area .right-image,
+.header-area .right-image img {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  z-index: -1 !important;
+}
+
+/* Ensure header logo stays on top */
+.header-area .logo img {
+  z-index: 1000 !important;
+  position: relative !important;
+  display: block !important;
+  visibility: visible !important;
+}
+
+/* Ensure testimonial images only show in testimonials section */
+section.testimonials .owl-testimonials,
+section.testimonials .owl-testimonials .item,
+section.testimonials .right-image,
+section.testimonials .right-image img {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 1 !important;
+  position: relative !important;
+}
+
+/* Force testimonial section and carousel to display properly */
+section.testimonials {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 1 !important;
+  margin-top: 50px !important;
+  margin-bottom: 50px !important;
+}
+
+section.testimonials .container {
+  display: block !important;
+  visibility: visible !important;
+}
+
+section.testimonials .owl-testimonials {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 5 !important;
+  height: auto !important;
+  min-height: 300px !important;
+  overflow: hidden !important;
+}
+
+section.testimonials .owl-testimonials .owl-stage {
+  display: block !important;
+  visibility: visible !important;
+}
+
+section.testimonials .owl-testimonials .owl-stage-outer {
+  display: block !important;
+  visibility: visible !important;
+}
+
+section.testimonials .owl-testimonials .owl-item {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+section.testimonials .owl-testimonials .item {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  left: auto !important;
+  top: auto !important;
+  margin: 0 !important;
+  padding: 20px !important;
+  background: #f8f9fa !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+  min-height: 200px !important;
+  text-align: center !important;
+}
+
+section.testimonials .owl-testimonials .item h4 {
+  color: #2c3e50 !important;
+  margin-bottom: 10px !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+}
+
+section.testimonials .owl-testimonials .item p {
+  color: #666 !important;
+  margin-bottom: 15px !important;
+  font-size: 16px !important;
+  line-height: 1.6 !important;
+}
+
+section.testimonials .owl-testimonials .item span {
+  color: #ff6b35 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+section.testimonials .owl-testimonials .item .right-image {
+  display: block !important;
+  visibility: visible !important;
+  text-align: center !important;
+  margin-top: 15px !important;
+}
+
+section.testimonials .owl-testimonials .item .right-image img {
+  display: block !important;
+  visibility: visible !important;
+  max-width: 80px !important;
+  max-height: 80px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  margin: 0 auto !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+}
+
+/* Ensure carousel dots are visible */
+section.testimonials .owl-testimonials .owl-dots {
+  display: block !important;
+  visibility: visible !important;
+  position: absolute !important;
+  bottom: 10px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+section.testimonials .owl-testimonials .owl-dot {
+  display: inline-block !important;
+  visibility: visible !important;
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 50% !important;
+  background: #ff6b35 !important;
+  margin: 0 3px !important;
+}
+
+/* Hide any testimonial images that might have escaped */
+body > header .owl-testimonials,
+body > header .right-image,
+body > nav .owl-testimonials {
+  display: none !important;
+  visibility: hidden !important;
+}

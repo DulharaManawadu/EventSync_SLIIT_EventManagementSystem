@@ -174,3 +174,12 @@ public
 # Temporary folders
 tmp/
 temp/
+
+# Local frontend dependencies and caches
+client/node_modules/
+client/.cache/
+
+node_modules/
+.cache/
+dist/
+build/

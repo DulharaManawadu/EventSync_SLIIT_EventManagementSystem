@@ -16,6 +16,9 @@ router.get('/', controller.listEvents);
 // GET /api/events/analytics - Get analytics (MUST come before /:id to avoid matching)
 router.get('/analytics', controller.analytics);
 
+// GET /api/events/analytics/advanced - Get advanced analytics with date filtering
+router.get('/analytics/advanced', controller.advancedAnalytics);
+
 // GET /api/events/:id - Get a single event by ID
 router.get('/:id', controller.getEvent);
 
