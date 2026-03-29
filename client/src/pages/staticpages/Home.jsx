@@ -659,7 +659,9 @@ export default function Home() {
                 position: 'relative',
                 transition: 'all 0.3s ease',
                 transform: 'translateY(0)',
-                border: '1px solid rgba(255, 255, 255, 0.2)'
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                flexDirection: 'column'
               }}>
                 <div className="quote-icon" style={{
                   position: 'absolute',
@@ -693,7 +695,8 @@ export default function Home() {
                 <div className="testimonial-author" style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '15px'
+                  gap: '15px',
+                  marginTop: 'auto'
                 }}>
                   <div className="author-image" style={{
                     width: '60px',
@@ -745,7 +748,9 @@ export default function Home() {
                 position: 'relative',
                 transition: 'all 0.3s ease',
                 transform: 'translateY(0)',
-                border: '1px solid rgba(255, 255, 255, 0.2)'
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                flexDirection: 'column'
               }}>
                 <div className="quote-icon" style={{
                   position: 'absolute',
@@ -779,7 +784,8 @@ export default function Home() {
                 <div className="testimonial-author" style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '15px'
+                  gap: '15px',
+                  marginTop: 'auto'
                 }}>
                   <div className="author-image" style={{
                     width: '60px',
@@ -831,7 +837,9 @@ export default function Home() {
                 position: 'relative',
                 transition: 'all 0.3s ease',
                 transform: 'translateY(0)',
-                border: '1px solid rgba(255, 255, 255, 0.2)'
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                flexDirection: 'column'
               }}>
                 <div className="quote-icon" style={{
                   position: 'absolute',
@@ -852,7 +860,7 @@ export default function Home() {
                 </div>
 
                 <p style={{
-                  color: '#ffffff',
+                  color: '#000000',
                   fontSize: '16px',
                   lineHeight: '1.8',
                   marginBottom: '20px',
@@ -865,7 +873,8 @@ export default function Home() {
                 <div className="testimonial-author" style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '15px'
+                  gap: '15px',
+                  marginTop: 'auto'
                 }}>
                   <div className="author-image" style={{
                     width: '60px',
@@ -891,7 +900,7 @@ export default function Home() {
                   </div>
                   <div className="author-info">
                     <h5 style={{
-                      color: '#ffffff',
+                      color: '#000000',
                       fontSize: '18px',
                       fontWeight: '600',
                       marginBottom: '5px',
