@@ -57,6 +57,11 @@ app.get('/health', (req, res) => {
 
 // ===== API Routes =====
 app.use('/api/events', require('./routes/eventRoutes'));
+app.use('/api/venues', require('./routes/venueRoutes'));
+app.use('/api/sponsors', require('./routes/sponsorRoutes'));
+app.use('/api/resources', require('./routes/resourceRoutes'));
+
+
 
 // ===== 404 Handler =====
 app.use((req, res) => {

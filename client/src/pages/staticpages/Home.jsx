@@ -185,7 +185,7 @@ export default function Home() {
                           <Link to="/events">Browse Events</Link>
                         </div>
                         <div className="orange-button">
-                          <Link to="/sponsorship">Become a Sponsor</Link>
+                          <Link to="/sponsers-events">Become a Sponsor</Link>
                         </div>
                       </div>
                     </div>

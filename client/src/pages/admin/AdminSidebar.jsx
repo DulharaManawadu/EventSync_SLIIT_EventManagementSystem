@@ -26,6 +26,21 @@ export default function AdminSidebar() {
       description: 'QR Code Management'
     },
     {
+      name: 'Venues',
+      path: '/venues',
+      description: 'Venue Management'
+    },
+    {
+      name: 'Resources',
+      path: '/resources',
+      description: 'Resource Management'
+    },
+    {
+      name: 'Sponsors',
+      path: '/sponsors',
+      description: 'Sponsor Management'
+    },
+    {
       name: 'Sponsorship',
       path: '/sponsorship-management',
       // icon: '🤝',
