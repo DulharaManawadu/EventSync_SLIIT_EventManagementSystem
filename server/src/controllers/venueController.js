@@ -15,17 +15,27 @@ export const createVenue = async (req, res) => {
       description
     } = req.body;
 
-    // Basic validation
-    if (!name || !venueType || !capacity || !location) {
-      return res.status(400).json({ message: "Required fields missing" });
+    if (!name || name.trim().length < 3) {
+      return res.status(400).json({ message: "Venue name must be at least 3 characters" });
+    }
+    
+    if (!["Hall", "Auditorium", "Ground", "Lab", "Classroom"].includes(venueType)) {
+      return res.status(400).json({ message: "Invalid venue type" });
+    }
+    
+    if (!capacity || capacity < 1) {
+      return res.status(400).json({ message: "Capacity must be greater than 0" });
+    }
+    
+    if (!location || location.trim().length < 3) {
+      return res.status(400).json({ message: "Location is required" });
+    }
+    
+    if (contactPhone && !/^[0-9]{10}$/.test(contactPhone)) {
+      return res.status(400).json({ message: "Invalid phone number (10 digits)" });
     }
 
-    // Duplicate check
-    const existingVenue = await Venue.findOne({ name });
-    if (existingVenue) {
-      return res.status(400).json({ message: "Venue already exists" });
-    }
-
+    
     const venue = await Venue.create({
       name,
       venueType,
@@ -57,10 +67,69 @@ export const getVenues = async (req, res) => {
 // UPDATE VENUE
 export const updateVenue = async (req, res) => {
   try {
+    const {
+      name,
+      venueType,
+      capacity,
+      location,
+      facilities,
+      availabilityStatus,
+      contactPerson,
+      contactPhone,
+      description
+    } = req.body;
+
+    // VALIDATIONS (same as create)
+
+    if (name && name.trim().length < 3) {
+      return res.status(400).json({ message: "Venue name must be at least 3 characters" });
+    }
+
+    if (
+      venueType &&
+      !["Hall", "Auditorium", "Ground", "Lab", "Classroom"].includes(venueType)
+    ) {
+      return res.status(400).json({ message: "Invalid venue type" });
+    }
+
+    if (capacity && capacity < 1) {
+      return res.status(400).json({ message: "Capacity must be greater than 0" });
+    }
+
+    if (location && location.trim().length < 3) {
+      return res.status(400).json({ message: "Location is required" });
+    }
+
+    if (contactPhone && !/^[0-9]{10}$/.test(contactPhone)) {
+      return res.status(400).json({ message: "Invalid phone number (10 digits)" });
+    }
+
+    // OPTIONAL: prevent duplicate name
+    if (name) {
+      const existing = await Venue.findOne({ name });
+      if (existing && existing._id.toString() !== req.params.id) {
+        return res.status(400).json({ message: "Venue name already exists" });
+      }
+    }
+
+    // UPDATE WITH VALIDATION
     const venue = await Venue.findByIdAndUpdate(
       req.params.id,
-      req.body,
-      { new: true }
+      {
+        name,
+        venueType,
+        capacity,
+        location,
+        facilities,
+        availabilityStatus,
+        contactPerson,
+        contactPhone,
+        description
+      },
+      {
+        new: true,
+        runValidators: true
+      }
     );
 
     if (!venue) {
@@ -72,6 +141,8 @@ export const updateVenue = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
 
 // DELETE VENUE
 export const deleteVenue = async (req, res) => {

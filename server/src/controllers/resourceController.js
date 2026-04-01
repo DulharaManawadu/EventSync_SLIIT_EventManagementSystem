@@ -2,7 +2,6 @@ import Resource from "../models/Resource.js";
 
 // CREATE RESOURCE
 export const createResource = async (req, res) => {
-
   try {
     const {
       name,
@@ -14,8 +13,20 @@ export const createResource = async (req, res) => {
       description
     } = req.body;
 
-    if (!name || !category || !totalQuantity) {
-      return res.status(400).json({ message: "Required fields missing" });
+    if (!name || name.trim().length < 3) {
+      return res.status(400).json({ message: "Resource name must be at least 3 characters" });
+    }
+
+    if (!["Audio", "Visual", "Furniture", "IT Equipment"].includes(category)) {
+      return res.status(400).json({ message: "Invalid category" });
+    }
+
+    if (!totalQuantity || totalQuantity < 1) {
+      return res.status(400).json({ message: "Total quantity must be greater than 0" });
+    }
+
+    if (availableQuantity < 0) {
+      return res.status(400).json({ message: "Available quantity cannot be negative" });
     }
 
     if (availableQuantity > totalQuantity) {
@@ -53,10 +64,62 @@ export const getResources = async (req, res) => {
 // UPDATE RESOURCE
 export const updateResource = async (req, res) => {
   try {
+    const {
+      name,
+      category,
+      totalQuantity,
+      availableQuantity,
+      conditionStatus,
+      lastMaintenanceDate,
+      description
+    } = req.body;
+
+    // CONDITIONAL VALIDATION
+
+    if (name && name.trim().length < 3) {
+      return res.status(400).json({ message: "Resource name must be at least 3 characters" });
+    }
+
+    if (
+      category &&
+      !["Audio", "Visual", "Furniture", "IT Equipment"].includes(category)
+    ) {
+      return res.status(400).json({ message: "Invalid category" });
+    }
+
+    if (totalQuantity && totalQuantity < 1) {
+      return res.status(400).json({ message: "Total quantity must be greater than 0" });
+    }
+
+    if (availableQuantity !== undefined && availableQuantity < 0) {
+      return res.status(400).json({ message: "Available quantity cannot be negative" });
+    }
+
+    if (
+      totalQuantity !== undefined &&
+      availableQuantity !== undefined &&
+      availableQuantity > totalQuantity
+    ) {
+      return res.status(400).json({
+        message: "Available quantity cannot exceed total quantity"
+      });
+    }
+
     const updated = await Resource.findByIdAndUpdate(
       req.params.id,
-      req.body,
-      { new: true }
+      {
+        name,
+        category,
+        totalQuantity,
+        availableQuantity,
+        conditionStatus,
+        lastMaintenanceDate,
+        description
+      },
+      {
+        new: true,
+        runValidators: true 
+      }
     );
 
     if (!updated) {

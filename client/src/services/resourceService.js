@@ -10,6 +10,11 @@ export const createResource = async (data) => {
   return await axios.post(API, data);
 };
 
+export const updateResource = async (id, data) => {
+  return await axios.put(`${API}/${id}`, data);
+};
+
+
 export const deleteResource = async (id) => {
   return await axios.delete(`${API}/${id}`);
 };
