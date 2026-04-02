@@ -14,18 +14,6 @@ export default function AdminSidebar() {
       description: 'Analytics Overview'
     },
     {
-      name: 'Event Management',
-      path: '/event-approval',
-      // icon: '📅',
-      description: 'Event Approval System'
-    },
-    {
-      name: 'QR Generation',
-      path: '/qr-generation',
-      // icon: '📱',
-      description: 'QR Code Management'
-    },
-    {
       name: 'Venues',
       path: '/venues',
       description: 'Venue Management'
@@ -35,6 +23,25 @@ export default function AdminSidebar() {
       path: '/resources',
       description: 'Resource Management'
     },
+    {
+      name: 'Event Management',
+      path: '/event-approval',
+      // icon: '📅',
+      description: 'Event Approval System'
+    },
+    {
+      name: 'Event Allocation',
+      path: '/event-allocation',
+      // icon: '📅',
+      description: 'Event Allocation System'
+    },
+    {
+      name: 'QR Generation',
+      path: '/qr-generation',
+      // icon: '📱',
+      description: 'QR Code Management'
+    },
+    
     {
       name: 'Sponsors',
       path: '/sponsors',
