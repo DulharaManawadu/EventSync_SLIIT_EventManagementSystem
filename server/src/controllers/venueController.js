@@ -1,7 +1,7 @@
-import Venue from "../models/Venue.js";
+const Venue = require('../models/Venue');
 
 // CREATE VENUE
-export const createVenue = async (req, res) => {
+const createVenue = async (req, res) => {
   try {
     const {
       name,
@@ -55,7 +55,7 @@ export const createVenue = async (req, res) => {
 };
 
 // GET ALL VENUES
-export const getVenues = async (req, res) => {
+const getVenues = async (req, res) => {
   try {
     const venues = await Venue.find();
     res.json(venues);
@@ -65,7 +65,7 @@ export const getVenues = async (req, res) => {
 };
 
 // UPDATE VENUE
-export const updateVenue = async (req, res) => {
+const updateVenue = async (req, res) => {
   try {
     const {
       name,
@@ -145,7 +145,7 @@ export const updateVenue = async (req, res) => {
 
 
 // DELETE VENUE
-export const deleteVenue = async (req, res) => {
+const deleteVenue = async (req, res) => {
   try {
     const venue = await Venue.findByIdAndDelete(req.params.id);
 
@@ -157,4 +157,11 @@ export const deleteVenue = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};
+
+module.exports = {
+  createVenue,
+  getVenues,
+  updateVenue,
+  deleteVenue
 };

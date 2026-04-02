@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Fragment } from 'react';
 import { Helmet } from 'react-helmet';
 import Header from '../Header';
 import Footer from '../Footer';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { getCurrentUser } from '../../utils/auth';
 import slide01 from '../../assets/images/slide-01.jpg';
 import slide02 from '../../assets/images/slide-02.jpg';
 import slide03 from '../../assets/images/slide-03.jpg';
@@ -14,6 +15,10 @@ import test03 from '../../assets/images/testimonial-03.jpeg';
 import '../../assets/css/testimonials-fix.css';
 
 export default function Home() {
+  const navigate = useNavigate();
+  const [message, setMessage] = useState('');
+  const currentUser = useMemo(() => getCurrentUser(), []);
+
   useEffect(() => {
     // Wait for Swiper library to be available
     const initSwiper = () => {
@@ -106,6 +111,25 @@ export default function Home() {
     };
   }, []);
 
+  const showUnauthorized = (messageText) => {
+    setMessage(messageText);
+    setTimeout(() => setMessage(''), 3500);
+  };
+
+  const handleNavClick = (path, allowedRoles = []) => {
+    if (!currentUser) {
+      showUnauthorized('Log in first to use this feature');
+      return;
+    }
+
+    if (allowedRoles.length > 0 && !allowedRoles.includes(currentUser.userType)) {
+      showUnauthorized("Sorry, you don't have proper authorization for this feature");
+      return;
+    }
+
+    navigate(path);
+  };
+
   return (
     <Fragment>
       <Helmet>
@@ -117,6 +141,21 @@ export default function Home() {
       </Helmet>
 
       <Header />
+      {message && (
+        <div style={{
+          position: 'fixed',
+          top: '90px',
+          right: '20px',
+          zIndex: 999,
+          background: '#f8d7da',
+          color: '#842029',
+          padding: '16px 20px',
+          borderRadius: '14px',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.12)'
+        }}>
+          {message}
+        </div>
+      )}
 
       {/* ***** Main Banner Area Start ***** */}
       <div className="swiper-container" id="top">
@@ -143,11 +182,23 @@ export default function Home() {
                         administrators control the full event lifecycle.
                       </p>
                       <div className="buttons">
-                        <div className="green-button">
-                          <Link to="/create-event">Create Event</Link>
+                        <div className="green-button" style={{ opacity: currentUser ? 1 : 0.6 }}>
+                          <button
+                            type="button"
+                            onClick={() => handleNavClick('/create-event', ['Admin', 'Student'])}
+                            style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: currentUser ? 'pointer' : 'not-allowed' }}
+                          >
+                            Create Event
+                          </button>
                         </div>
-                        <div className="orange-button">
-                          <Link to="/admin-dashboard">Admin Approval Panel</Link>
+                        <div className="orange-button" style={{ opacity: currentUser ? 1 : 0.6 }}>
+                          <button
+                            type="button"
+                            onClick={() => handleNavClick('/admin-dashboard', ['Admin'])}
+                            style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: currentUser ? 'pointer' : 'not-allowed' }}
+                          >
+                            Admin Approval Panel
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -182,10 +233,18 @@ export default function Home() {
                       </p>
                       <div className="buttons">
                         <div className="green-button">
-                          <Link to="/events">Browse Events</Link>
+                          <button type="button" onClick={() => navigate('/events')} style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: 'pointer' }}>
+                            Browse Events
+                          </button>
                         </div>
-                        <div className="orange-button">
-                          <Link to="/sponsers-events">Become a Sponsor</Link>
+                        <div className="orange-button" style={{ opacity: currentUser ? 1 : 0.6 }}>
+                          <button
+                            type="button"
+                            onClick={() => handleNavClick('/sponsers-events', ['Sponsor'])}
+                            style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: currentUser ? 'pointer' : 'not-allowed' }}
+                          >
+                            Become a Sponsor
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -220,11 +279,23 @@ export default function Home() {
                         making.
                       </p>
                       <div className="buttons">
-                        <div className="green-button">
-                          <Link to="/qr-checkin">Activate Check-In</Link>
+                        <div className="green-button" style={{ opacity: currentUser ? 1 : 0.6 }}>
+                          <button
+                            type="button"
+                            onClick={() => handleNavClick('/qr-checkin')}
+                            style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: currentUser ? 'pointer' : 'not-allowed' }}
+                          >
+                            Activate Check-In
+                          </button>
                         </div>
-                        <div className="orange-button">
-                          <Link to="/analytics">View Analytics</Link>
+                        <div className="orange-button" style={{ opacity: currentUser ? 1 : 0.6 }}>
+                          <button
+                            type="button"
+                            onClick={() => handleNavClick('/analytics', ['Admin'])}
+                            style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: currentUser ? 'pointer' : 'not-allowed' }}
+                          >
+                            View Analytics
+                          </button>
                         </div>
                       </div>
                     </div>

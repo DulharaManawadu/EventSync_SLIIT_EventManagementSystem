@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { authFetch } from '../../../utils/auth';
 
 export default function Analytics() {
   const [stats, setStats] = useState(null);
@@ -6,14 +7,17 @@ export default function Analytics() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/events/analytics')
-      .then(res => res.json())
-      .then(data => {
-        setStats(data);
+    authFetch('http://localhost:5000/api/events/analytics')
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || 'Failed to load analytics data');
+        }
+        setStats(data.data?.summary || {});
         setLoading(false);
       })
-      .catch(err => {
-        setError(err.message);
+      .catch((err) => {
+        setError(err.message || 'Failed to load analytics');
         setLoading(false);
       });
   }, []);
