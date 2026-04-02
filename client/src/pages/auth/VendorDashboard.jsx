@@ -80,9 +80,6 @@ export default function VendorDashboard() {
               </p>
             </div>
             <div>
-              <button onClick={() => navigate('/vendor-profile')} className="orange-button" style={{ marginRight: '10px' }}>
-                Profile
-              </button>
               <button onClick={() => navigate('/vendor-profile')} className="orange-button">
                 View Profile
               </button>

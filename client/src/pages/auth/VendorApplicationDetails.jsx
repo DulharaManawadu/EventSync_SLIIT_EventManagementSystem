@@ -101,61 +101,68 @@ export default function VendorApplicationDetails() {
       </Helmet>
       <Header />
 
-      <div style={{ minHeight: '100vh', padding: '140px 20px 40px', background: '#eef2ff' }}>
-        <div style={{ maxWidth: '900px', margin: 'auto' }}>
-          <button onClick={() => navigate('/vendor-profile')} className="orange-button" style={{ marginBottom: '10px', padding: '8px 12px', fontSize: '0.85rem' }}>
-            ← Back to Profile
+      <div style={{ minHeight: '100vh', padding: '140px 20px 40px', backgroundImage: `url(${slide01})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
+        <div style={{ maxWidth: '1000px', margin: 'auto', background: 'rgba(255, 255, 255, 0.95)', borderRadius: '18px', padding: '36px', boxShadow: '0 16px 50px rgba(0,0,0,0.08)' }}>
+          <button onClick={() => navigate('/vendor-dashboard')} className="orange-button" style={{ marginBottom: '10px', padding: '8px 12px', fontSize: '0.85rem' }}>
+            ← Back to Dashboard
           </button>
 
-          <div style={{ background: '#fff', borderRadius: '18px', padding: '28px', boxShadow: '0 16px 50px rgba(0,0,0,0.08)' }}>
-            <h1>Application Details</h1>
+          <h1 style={{ marginBottom: '24px' }}>Application Details</h1>
             {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
             {message && <p style={{ color: '#065f46' }}>{message}</p>}
 
             {application ? (
-              <>
-                <p><strong>Event:</strong> {application.event?.title}</p>
-                <p><strong>Date:</strong> {new Date(application.event?.date).toLocaleString()}</p>
-                <p><strong>Location:</strong> {application.event?.venue || application.event?.societyName}</p>
-                <p><strong>Status:</strong> {application.status}</p>
+              <div>
+                <div style={{ borderBottom: '1px solid #e5e7eb', paddingBottom: '16px', marginBottom: '20px' }}>
+                  <p style={{ marginBottom: '12px' }}><strong>Event:</strong> {application.event?.title}</p>
+                  <p style={{ marginBottom: '12px' }}><strong>Date:</strong> {new Date(application.event?.date).toLocaleString()}</p>
+                  <p style={{ marginBottom: '12px' }}><strong>Location:</strong> {application.event?.venue || application.event?.societyName}</p>
+                  <p style={{ marginBottom: 0 }}><strong>Status:</strong> {application.status}</p>
+                </div>
 
                 {isEditing ? (
-                  <form onSubmit={onSave}>
-                    <label>Stall Name</label>
-                    <input value={stallName} onChange={(e) => setStallName(e.target.value)} className="form-control" required />
-                    <label style={{ marginTop: '8px' }}>Food Type</label>
-                    <input value={foodType} onChange={(e) => setFoodType(e.target.value)} className="form-control" required />
+                  <form onSubmit={onSave} style={{ marginTop: '20px' }}>
+                    <div style={{ marginBottom: '18px' }}>
+                      <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>Stall Name</label>
+                      <input value={stallName} onChange={(e) => setStallName(e.target.value)} className="form-control" required />
+                    </div>
+                    <div style={{ marginBottom: '18px' }}>
+                      <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>Food Type</label>
+                      <input value={foodType} onChange={(e) => setFoodType(e.target.value)} className="form-control" required />
+                    </div>
 
-                    <h4>Menu</h4>
-                    {menuItems.map((item, idx) => (
-                      <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={item.name}
-                          onChange={(e) => updateMenuRow(idx, { ...item, name: e.target.value })}
-                          placeholder="Item"
-                          required
-                        />
-                        <input
-                          type="number"
-                          className="form-control"
-                          value={item.price}
-                          onChange={(e) => updateMenuRow(idx, { ...item, price: e.target.value })}
-                          placeholder="Rs."
-                          min="0"
-                          required
-                        />
-                        <button type="button" className="orange-button" onClick={() => removeMenuItem(idx)}>
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                    <button type="button" className="orange-button" onClick={addMenuItem} style={{ marginBottom: '12px' }}>
-                      + Add Item
-                    </button>
+                    <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #e5e7eb', marginBottom: '18px' }}>
+                      <h4 style={{ marginBottom: '12px', fontSize: '1rem', color: '#0f172a' }}>Menu Items</h4>
+                      {menuItems.map((item, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                          <input
+                            type="text"
+                            className="form-control"
+                            value={item.name}
+                            onChange={(e) => updateMenuRow(idx, { ...item, name: e.target.value })}
+                            placeholder="Item"
+                            required
+                          />
+                          <input
+                            type="number"
+                            className="form-control"
+                            value={item.price}
+                            onChange={(e) => updateMenuRow(idx, { ...item, price: e.target.value })}
+                            placeholder="Rs."
+                            min="0"
+                            required
+                          />
+                          <button type="button" className="orange-button" onClick={() => removeMenuItem(idx)}>
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                      <button type="button" className="orange-button" onClick={addMenuItem} style={{ marginTop: '8px', marginBottom: '16px' }}>
+                        + Add Item
+                      </button>
+                    </div>
 
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ display: 'flex', gap: '10px', paddingTop: '16px', borderTop: '1px solid #e5e7eb' }}>
                       <button type="submit" className="orange-button">
                         Save Application
                       </button>
@@ -165,29 +172,34 @@ export default function VendorApplicationDetails() {
                     </div>
                   </form>
                 ) : (
-                  <>
-                    <h4>Submitted Stall Details</h4>
-                    <p><strong>Stall Name:</strong> {application.stallName}</p>
-                    <p><strong>Food Type:</strong> {application.foodType}</p>
-                    <div>
-                      <strong>Menu Items:</strong>
-                      <ul>
-                        {application.menuItems.map((item, idx) => (
-                          <li key={idx}>{item.name} - Rs. {item.price}</li>
-                        ))}
-                      </ul>
+                  <div>
+                    <div style={{ marginTop: '20px' }}>
+                      <h4 style={{ marginBottom: '18px', fontSize: '1.1rem', color: '#0f172a' }}>Submitted Stall Details</h4>
+                      <div style={{ borderLeft: '3px solid #f97316', paddingLeft: '16px', marginBottom: '16px' }}>
+                        <p style={{ marginBottom: '12px' }}><strong>Stall Name:</strong> {application.stallName}</p>
+                        <p style={{ marginBottom: '12px' }}><strong>Food Type:</strong> {application.foodType}</p>
+                      </div>
+                      <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #e5e7eb' }}>
+                        <strong style={{ fontSize: '1rem', display: 'block', marginBottom: '12px' }}>Menu Items:</strong>
+                        <ul style={{ paddingLeft: '20px', marginBottom: '16px' }}>
+                          {application.menuItems.map((item, idx) => (
+                            <li key={idx} style={{ marginBottom: '8px' }}>{item.name} - Rs {Number(item.price).toFixed(2)}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #e5e7eb', display: 'flex', gap: '10px' }}>
+                        <button onClick={() => setIsEditing(true)} className="orange-button">Edit Application</button>
+                        <button onClick={onWithdraw} className="orange-button" style={{ backgroundColor: '#ef4444' }}>
+                          Withdraw Application
+                        </button>
+                      </div>
                     </div>
-                    <button onClick={() => setIsEditing(true)} className="orange-button">Edit Application</button>
-                    <button onClick={onWithdraw} className="orange-button" style={{ marginLeft: '10px', backgroundColor: '#ef4444' }}>
-                      Withdraw Application
-                    </button>
-                  </>
+                  </div>
                 )}
-              </>
+              </div>
             ) : (
               <p>Loading application details...</p>
             )}
-          </div>
         </div>
       </div>
 
