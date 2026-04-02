@@ -14,6 +14,10 @@ import Login from './pages/auth/Login';
 import RegisterSelection from './pages/auth/RegisterSelection';
 import RegisterForm from './pages/auth/RegisterForm';
 import VendorDashboard from './pages/auth/VendorDashboard';
+import VendorProfile from './pages/auth/VendorProfile';
+import VendorEditProfile from './pages/auth/VendorEditProfile';
+import VendorEventApply from './pages/auth/VendorEventApply';
+import VendorApplicationDetails from './pages/auth/VendorApplicationDetails';
 import QrCheckin from './pages/auth/QrCheckin';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -34,6 +38,10 @@ function App() {
         <Route path="/register" element={<RegisterSelection />} />
         <Route path="/register/:userType" element={<RegisterForm />} />
         <Route path="/vendor-dashboard" element={<ProtectedRoute roles={['Vendor']}><VendorDashboard /></ProtectedRoute>} />
+        <Route path="/vendor-profile" element={<ProtectedRoute roles={['Vendor']}><VendorProfile /></ProtectedRoute>} />
+        <Route path="/vendor-profile/edit" element={<ProtectedRoute roles={['Vendor']}><VendorEditProfile /></ProtectedRoute>} />
+        <Route path="/vendor-events/apply/:eventId" element={<ProtectedRoute roles={['Vendor']}><VendorEventApply /></ProtectedRoute>} />
+        <Route path="/vendor-applications/:id" element={<ProtectedRoute roles={['Vendor']}><VendorApplicationDetails /></ProtectedRoute>} />
         <Route path="/qr-checkin" element={<QrCheckin />} />
         <Route path="/create-event" element={<ProtectedRoute roles={['Admin', 'Student']}><CreateEvent /></ProtectedRoute>} />
         <Route path="/events" element={<Events />} />
