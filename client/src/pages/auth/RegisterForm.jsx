@@ -106,8 +106,17 @@ export default function RegisterForm() {
     return '';
   }, [form.userId, form.faculty, userType]);
 
+  const capitalizeFirstLetter = (text) => {
+    if (!text || typeof text !== 'string') return text;
+    return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+  };
+
   const handleInput = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    const normalizedValue = ['firstName', 'lastName'].includes(field)
+      ? capitalizeFirstLetter(value)
+      : value;
+
+    setForm((prev) => ({ ...prev, [field]: normalizedValue }));
   };
 
   const handleCertificateChange = (event) => {
