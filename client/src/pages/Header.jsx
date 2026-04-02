@@ -60,19 +60,24 @@ export default function Header() {
                 </li>
                 <li>
                   {user ? (
-                    <button
-                      onClick={handleLogout}
-                      style={{
-                        border: 'none',
-                        background: 'transparent',
-                        color: '#ffffff',
-                        cursor: 'pointer',
-                        font: 'inherit',
-                        padding: 0
-                      }}
-                    >
-                      Logout
-                    </button>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', color: '#ffffff' }}>
+                      <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>
+                        Welcome {user.firstName ? user.firstName : ''}
+                      </span>
+                      <button
+                        onClick={handleLogout}
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          color: '#ffffff',
+                          cursor: 'pointer',
+                          font: 'inherit',
+                          padding: 0
+                        }}
+                      >
+                        Logout
+                      </button>
+                    </span>
                   ) : (
                     <Link to="/login">Login</Link>
                   )}
