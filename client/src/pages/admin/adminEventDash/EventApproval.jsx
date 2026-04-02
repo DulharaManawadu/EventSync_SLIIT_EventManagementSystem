@@ -13,6 +13,9 @@ export default function EventApproval() {
   const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [toastMessage, setToastMessage] = useState(null); // { type: 'success'|'error', text: '', status: 'Approved'|'Pending'|'Rejected' }
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [showEditForm, setShowEditForm] = useState(false);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -55,6 +58,11 @@ export default function EventApproval() {
     }
   };
 
+  const showToastNotification = (type, text, status) => {
+    setToastMessage({ type, text, status });
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
   const fetchEvents = async () => {
     try {
       setLoading(true);
@@ -88,19 +96,19 @@ export default function EventApproval() {
       key: 'Pending',
       label: 'Pending',
       count: events.filter((e) => e.status === 'Pending').length,
-      icon: '⏳'
+      //icon: '⏳'
     },
     {
       key: 'Approved',
       label: 'Approved',
       count: events.filter((e) => e.status === 'Approved').length,
-      icon: '✅'
+     // icon: '✅'
     },
     {
       key: 'Rejected',
       label: 'Rejected',
       count: events.filter((e) => e.status === 'Rejected').length,
-      icon: '❌'
+      //icon: '❌'
     }
   ];
 
@@ -134,10 +142,14 @@ export default function EventApproval() {
         prev.map((event) => (event._id === eventId ? result.data : event))
       );
 
-      showTemporaryMessage('success', `Event status updated to ${newStatus}`);
+      const msg = `Event status updated to ${newStatus}`;
+      showTemporaryMessage('success', msg);
+      showToastNotification('success', msg, newStatus);
     } catch (err) {
       console.error(err);
-      showTemporaryMessage('error', err.message || 'Failed to update status');
+      const errMsg = err.message || 'Failed to update status';
+      showTemporaryMessage('error', errMsg);
+      showToastNotification('error', errMsg, null);
     }
   };
 
@@ -182,12 +194,13 @@ export default function EventApproval() {
       );
 
       setSelectedEvents([]);
-      showTemporaryMessage(
-        'success',
-        `Successfully updated ${results.length} event(s) to ${mappedStatus}`
-      );
+      const msg = `Successfully updated ${results.length} event(s) to ${mappedStatus}`;
+      showTemporaryMessage('success', msg);
+      showToastNotification('success', msg, mappedStatus);
     } catch (err) {
-      showTemporaryMessage('error', err.message || 'Bulk update failed');
+      const errMsg = err.message || 'Bulk update failed';
+      showTemporaryMessage('error', errMsg);
+      showToastNotification('error', errMsg, null);
     }
   };
 
@@ -208,6 +221,42 @@ export default function EventApproval() {
       showTemporaryMessage('success', 'Event deleted successfully');
     } catch (err) {
       showTemporaryMessage('error', err.message || 'Failed to delete event');
+    }
+  };
+
+  const handleEdit = (event) => {
+    setEditingEvent(event);
+    setShowEditForm(true);
+  };
+
+  const handleUpdate = async (updatedData) => {
+    try {
+      const response = await fetch(`${API_BASE}/${editingEvent._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.errors?.join(', ') ||
+            result.message ||
+            'Failed to update event'
+        );
+      }
+
+      setEvents((prev) =>
+        prev.map((event) => (event._id === editingEvent._id ? result.data : event))
+      );
+
+      setShowEditForm(false);
+      setEditingEvent(null);
+      showTemporaryMessage('success', 'Event updated successfully');
+    } catch (err) {
+      console.error('Update error:', err);
+      showTemporaryMessage('error', err.message || 'Failed to update event');
     }
   };
 
@@ -519,6 +568,39 @@ export default function EventApproval() {
 
       <div style={styles.contentSection}>
         <div className="container">
+          {toastMessage && (
+            <div
+              style={{
+                position: 'fixed',
+                right: '24px',
+                top: '88px',
+                zIndex: 1100,
+                background: toastMessage.type === 'success'
+                  ? (toastMessage.status === 'Approved' ? '#ecfdf5' :
+                     toastMessage.status === 'Pending' ? '#fffbeb' :
+                     toastMessage.status === 'Rejected' ? '#fef2f2' : '#ecfdf5')
+                  : '#fee2e2',
+                color: toastMessage.type === 'success'
+                  ? (toastMessage.status === 'Approved' ? '#059669' :
+                     toastMessage.status === 'Pending' ? '#d97706' :
+                     toastMessage.status === 'Rejected' ? '#dc2626' : '#059669')
+                  : '#991b1b',
+                border: `1px solid ${toastMessage.type === 'success'
+                  ? (toastMessage.status === 'Approved' ? '#a7f3d0' :
+                     toastMessage.status === 'Pending' ? '#fcd34d' :
+                     toastMessage.status === 'Rejected' ? '#fca5a5' : '#a7f3d0')
+                  : '#fecaca'}`,
+                borderRadius: '12px',
+                padding: '12px 16px',
+                boxShadow: '0 10px 24px rgba(0, 0, 0, 0.15)',
+                minWidth: '260px',
+                fontWeight: 700
+              }}
+            >
+              {toastMessage.text}
+            </div>
+          )}
+
           {successMessage && (
             <div
               style={{
@@ -663,6 +745,17 @@ export default function EventApproval() {
                       </button>
 
                       <button
+                        onClick={() => handleEdit(event)}
+                        style={{
+                          ...baseButtonStyle,
+                          background: '#4f46e5',
+                          color: '#fff'
+                        }}
+                      >
+                        Edit
+                      </button>
+
+                      <button
                         onClick={() => setShowDeleteModal(event._id)}
                         style={styles.deleteBtn}
                       >
@@ -703,8 +796,458 @@ export default function EventApproval() {
         </div>
       )}
 
+      {showEditForm && editingEvent && (
+        <div style={styles.modalOverlay} onClick={() => {
+          setShowEditForm(false);
+          setEditingEvent(null);
+        }}>
+          <div
+            style={{
+              ...styles.modal,
+              maxWidth: '800px',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={styles.modalTitle}>Edit Event: {editingEvent.title}</h3>
+            <EventEditFormCompact
+              event={editingEvent}
+              onUpdate={handleUpdate}
+              onCancel={() => {
+                setShowEditForm(false);
+                setEditingEvent(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       </div>
     </>
+  );
+}
+
+function EventEditFormCompact({ event, onUpdate, onCancel }) {
+  const categoryOptions = [
+    'Technical',
+    'Cultural',
+    'Sports',
+    'Workshop',
+    'Seminar',
+    'Competition',
+    'Conference',
+    'Other'
+  ];
+
+  const facultyOptions = [
+    'Computing',
+    'Engineering',
+    'Business',
+    'Architecture',
+    'Hospitality',
+    'Science',
+    'Other'
+  ];
+
+  const eventTypeOptions = ['Physical', 'Virtual', 'Hybrid'];
+
+  const [formData, setFormData] = React.useState({
+    title: event.title || '',
+    description: event.description || '',
+    category: event.category || 'Technical',
+    eventType: event.eventType || 'Physical',
+    faculty: event.faculty || 'Computing',
+    department: event.department || '',
+    venue: event.venue || '',
+    date: event.date ? new Date(event.date).toISOString().slice(0, 16) : '',
+    endDate: event.endDate ? new Date(event.endDate).toISOString().slice(0, 16) : '',
+    capacity: event.capacity || '',
+    organizerName: event.organizerName || event.organizer || '',
+    organizerEmail: event.organizerEmail || '',
+    phoneNumbers: Array.isArray(event.phoneNumbers)
+      ? event.phoneNumbers.join(', ')
+      : '',
+    societyName: event.societyName || '',
+    budget: event.budget || '',
+    tags: Array.isArray(event.tags) ? event.tags.join(', ') : '',
+    status: event.status || 'Pending'
+  });
+
+  const [errors, setErrors] = React.useState({});
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+    setErrors((prev) => ({ ...prev, [name]: '' }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.title.trim()) newErrors.title = 'Title is required';
+    if (!formData.description.trim()) newErrors.description = 'Description is required';
+    if (!formData.venue.trim()) newErrors.venue = 'Venue is required';
+    if (!formData.date) newErrors.date = 'Date is required';
+    if (!formData.capacity || Number(formData.capacity) < 1) {
+      newErrors.capacity = 'Capacity must be at least 1';
+    }
+    if (!formData.organizerName.trim()) {
+      newErrors.organizerName = 'Organizer name is required';
+    }
+    if (!formData.phoneNumbers.trim()) {
+      newErrors.phoneNumbers = 'At least one phone number is required';
+    }
+
+    if (formData.organizerEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.organizerEmail.trim())) {
+        newErrors.organizerEmail = 'Invalid email address';
+      }
+    }
+
+    if (formData.endDate && formData.date) {
+      const start = new Date(formData.date);
+      const end = new Date(formData.endDate);
+      if (end <= start) {
+        newErrors.endDate = 'End date must be after start date';
+      }
+    }
+
+    return newErrors;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    const formErrors = validateForm();
+
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
+      window.alert(
+        `Please fix the following issues:\n\n• ${Object.values(formErrors).join(
+          '\n• '
+        )}`
+      );
+      return;
+    }
+
+    onUpdate({
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      category: formData.category,
+      eventType: formData.eventType,
+      faculty: formData.faculty,
+      department: formData.department.trim(),
+      venue: formData.venue.trim(),
+      date: formData.date,
+      endDate: formData.endDate || undefined,
+      capacity: Number(formData.capacity),
+      organizerName: formData.organizerName.trim(),
+      organizer: formData.organizerName.trim(),
+      organizerEmail: formData.organizerEmail.trim(),
+      phoneNumbers: formData.phoneNumbers
+        .split(',')
+        .map((p) => p.trim())
+        .filter(Boolean),
+      societyName: formData.societyName.trim(),
+      budget: formData.budget === '' ? 0 : Number(formData.budget),
+      tags: formData.tags
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+    });
+  };
+
+  const fieldStyle = {
+    marginBottom: '16px'
+  };
+
+  const labelStyle = {
+    display: 'block',
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: '8px',
+    fontSize: '14px'
+  };
+
+  const inputStyle = {
+    width: '100%',
+    padding: '10px 12px',
+    borderRadius: '8px',
+    border: '1px solid #e5e7eb',
+    fontSize: '14px',
+    fontFamily: 'inherit'
+  };
+
+  const errorStyle = {
+    color: '#dc2626',
+    fontSize: '12px',
+    marginTop: '4px'
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ marginTop: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Title</label>
+          <input
+            type="text"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            style={inputStyle}
+            required
+          />
+          {errors.title && <div style={errorStyle}>{errors.title}</div>}
+        </div>
+
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Category</label>
+          <select
+            name="category"
+            value={formData.category}
+            onChange={handleChange}
+            style={inputStyle}
+            required
+          >
+            {categoryOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Description</label>
+        <textarea
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
+          rows="3"
+          style={{...inputStyle, fontFamily: 'inherit'}}
+          required
+        />
+        {errors.description && <div style={errorStyle}>{errors.description}</div>}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Date</label>
+          <input
+            type="datetime-local"
+            name="date"
+            value={formData.date}
+            onChange={handleChange}
+            style={inputStyle}
+            required
+          />
+          {errors.date && <div style={errorStyle}>{errors.date}</div>}
+        </div>
+
+        <div style={fieldStyle}>
+          <label style={labelStyle}>End Date</label>
+          <input
+            type="datetime-local"
+            name="endDate"
+            value={formData.endDate}
+            onChange={handleChange}
+            style={inputStyle}
+          />
+          {errors.endDate && <div style={errorStyle}>{errors.endDate}</div>}
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Venue</label>
+          <input
+            type="text"
+            name="venue"
+            value={formData.venue}
+            onChange={handleChange}
+            style={inputStyle}
+            required
+          />
+          {errors.venue && <div style={errorStyle}>{errors.venue}</div>}
+        </div>
+
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Faculty</label>
+          <select
+            name="faculty"
+            value={formData.faculty}
+            onChange={handleChange}
+            style={inputStyle}
+            required
+          >
+            {facultyOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Event Type</label>
+          <select
+            name="eventType"
+            value={formData.eventType}
+            onChange={handleChange}
+            style={inputStyle}
+          >
+            {eventTypeOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Department</label>
+          <input
+            type="text"
+            name="department"
+            value={formData.department}
+            onChange={handleChange}
+            style={inputStyle}
+          />
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Capacity</label>
+          <input
+            type="number"
+            name="capacity"
+            value={formData.capacity}
+            onChange={handleChange}
+            min="1"
+            style={inputStyle}
+            required
+          />
+          {errors.capacity && <div style={errorStyle}>{errors.capacity}</div>}
+        </div>
+
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Budget (LKR)</label>
+          <input
+            type="number"
+            name="budget"
+            value={formData.budget}
+            onChange={handleChange}
+            min="0"
+            style={inputStyle}
+          />
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Organizer Name</label>
+          <input
+            type="text"
+            name="organizerName"
+            value={formData.organizerName}
+            onChange={handleChange}
+            style={inputStyle}
+            required
+          />
+          {errors.organizerName && <div style={errorStyle}>{errors.organizerName}</div>}
+        </div>
+
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Organizer Email</label>
+          <input
+            type="email"
+            name="organizerEmail"
+            value={formData.organizerEmail}
+            onChange={handleChange}
+            style={inputStyle}
+          />
+          {errors.organizerEmail && <div style={errorStyle}>{errors.organizerEmail}</div>}
+        </div>
+      </div>
+
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Phone Numbers (comma-separated)</label>
+        <input
+          type="text"
+          name="phoneNumbers"
+          value={formData.phoneNumbers}
+          onChange={handleChange}
+          placeholder="e.g., +94123456789, +94987654321"
+          style={inputStyle}
+          required
+        />
+        {errors.phoneNumbers && <div style={errorStyle}>{errors.phoneNumbers}</div>}
+      </div>
+
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Society Name</label>
+        <input
+          type="text"
+          name="societyName"
+          value={formData.societyName}
+          onChange={handleChange}
+          style={inputStyle}
+        />
+        {errors.societyName && <div style={errorStyle}>{errors.societyName}</div>}
+      </div>
+
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Tags (comma-separated)</label>
+        <input
+          type="text"
+          name="tags"
+          value={formData.tags}
+          onChange={handleChange}
+          placeholder="e.g., important, featured, popular"
+          style={inputStyle}
+        />
+      </div>
+
+      <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+        <button
+          type="submit"
+          style={{
+            padding: '10px 20px',
+            background: '#16a34a',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '8px',
+            fontWeight: '600',
+            cursor: 'pointer'
+          }}
+        >
+          Save Changes
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            padding: '10px 20px',
+            background: '#e5e7eb',
+            color: '#374151',
+            border: 'none',
+            borderRadius: '8px',
+            fontWeight: '600',
+            cursor: 'pointer'
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
   );
 }
