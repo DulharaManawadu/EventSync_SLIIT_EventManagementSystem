@@ -11,9 +11,11 @@ import AdminDashboardAnalytics from './pages/admin/adminAnalytics/AdminDashboard
 import EventApproval from './pages/admin/adminEventDash/EventApproval';
 import Sponserpage from './pages/staticpages/sponserpage.jsx';
 
+
 import Venues from './pages/admin/venues/Venues';
 import Resources from './pages/admin/resources/Resources';
 import Sponsors from './pages/admin/sponsors/Sponsors';
+import EventAllocation from './pages/admin/allocation/EventAllocation.jsx';
 
 function App() {
   return (
@@ -34,6 +36,7 @@ function App() {
         <Route path="/venues" element={<Venues />} />
         <Route path="/resources" element={<Resources />} />
         <Route path="/sponsors" element={<Sponsors />} />
+        <Route path="/event-allocation" element={<EventAllocation />} />
         
         {/* additional routes */}
       </Routes>

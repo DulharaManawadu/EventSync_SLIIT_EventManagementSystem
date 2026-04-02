@@ -60,7 +60,7 @@ app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/venues', require('./routes/venueRoutes'));
 app.use('/api/sponsors', require('./routes/sponsorRoutes'));
 app.use('/api/resources', require('./routes/resourceRoutes'));
-
+app.use('/api/allocations', require('./routes/allocationRoutes'));
 
 
 // ===== 404 Handler =====
