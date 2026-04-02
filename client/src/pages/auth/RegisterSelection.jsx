@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import Header from '../../pages/Header';
 import Footer from '../../pages/Footer';
+import slide01 from '../../assets/images/slide-01.jpg';
 
 const cardStyle = {
   minHeight: '220px',
@@ -27,11 +28,28 @@ export default function RegisterSelection() {
         <title>Register | EventSync</title>
       </Helmet>
       <Header />
-      <div style={{ minHeight: 'calc(100vh - 260px)', padding: '80px 20px', background: '#eef2ff' }}>
-        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+      <div style={{ 
+        minHeight: '100vh', 
+        padding: '140px 20px 40px', 
+        backgroundImage: `url(${slide01})`, 
+        backgroundSize: 'cover', 
+        backgroundPosition: 'center', 
+        backgroundAttachment: 'fixed',
+        position: 'relative'
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.3)',
+          zIndex: 1
+        }}></div>
+        <div style={{ maxWidth: '1000px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
           <div style={{ textAlign: 'center', marginBottom: '42px' }}>
-            <h1 style={{ fontSize: '40px', marginBottom: '12px', color: '#0f172a' }}>Create Your Account</h1>
-            <p style={{ fontSize: '16px', color: '#475569' }}>
+            <h1 style={{ fontSize: '40px', marginBottom: '12px', color: '#ffffff' }}>Create Your Account</h1>
+            <p style={{ fontSize: '16px', color: '#ffffff' }}>
               Select the user type that best describes you and complete the registration form.
             </p>
           </div>

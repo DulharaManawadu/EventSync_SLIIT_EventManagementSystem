@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Header from '../../pages/Header';
 import Footer from '../../pages/Footer';
 import { saveAuth } from '../../utils/auth';
+import slide01 from '../../assets/images/slide-01.jpg';
 
 const API_BASE = 'http://localhost:5000/api/auth';
 
@@ -63,8 +64,34 @@ export default function Login() {
         <title>Login | EventSync</title>
       </Helmet>
       <Header />
-      <div style={{ minHeight: 'calc(100vh - 260px)', padding: '80px 20px', background: '#f5f7fb' }}>
-        <div style={{ maxWidth: '520px', margin: '0 auto', background: '#ffffff', borderRadius: '16px', boxShadow: '0 20px 70px rgba(15, 23, 42, 0.08)', padding: '36px' }}>
+      <div style={{ 
+        minHeight: '100vh', 
+        padding: '140px 20px 40px', 
+        backgroundImage: `url(${slide01})`, 
+        backgroundSize: 'cover', 
+        backgroundPosition: 'center', 
+        backgroundAttachment: 'fixed',
+        position: 'relative'
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.3)',
+          zIndex: 1
+        }}></div>
+        <div style={{ 
+          maxWidth: '600px', 
+          margin: '0 auto', 
+          background: '#ffffff', 
+          borderRadius: '16px', 
+          boxShadow: '0 20px 70px rgba(15, 23, 42, 0.08)', 
+          padding: '36px',
+          position: 'relative',
+          zIndex: 2
+        }}>
           <h2 style={{ marginBottom: '24px', color: '#0f172a' }}>Member Login</h2>
           <p style={{ marginBottom: '24px', color: '#475569' }}>
             Enter your registered email and password to continue.
