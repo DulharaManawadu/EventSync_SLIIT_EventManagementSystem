@@ -1,7 +1,7 @@
-import Resource from "../models/Resource.js";
+const Resource = require('../models/Resource');
 
 // CREATE RESOURCE
-export const createResource = async (req, res) => {
+const createResource = async (req, res) => {
   try {
     const {
       name,
@@ -52,7 +52,7 @@ export const createResource = async (req, res) => {
 };
 
 // GET ALL RESOURCES
-export const getResources = async (req, res) => {
+const getResources = async (req, res) => {
   try {
     const resources = await Resource.find();
     res.json(resources);
@@ -62,7 +62,7 @@ export const getResources = async (req, res) => {
 };
 
 // UPDATE RESOURCE
-export const updateResource = async (req, res) => {
+const updateResource = async (req, res) => {
   try {
     const {
       name,
@@ -133,7 +133,7 @@ export const updateResource = async (req, res) => {
 };
 
 // DELETE RESOURCE
-export const deleteResource = async (req, res) => {
+const deleteResource = async (req, res) => {
   try {
     const deleted = await Resource.findByIdAndDelete(req.params.id);
 
@@ -145,4 +145,11 @@ export const deleteResource = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};
+
+module.exports = {
+  createResource,
+  getResources,
+  updateResource,
+  deleteResource
 };

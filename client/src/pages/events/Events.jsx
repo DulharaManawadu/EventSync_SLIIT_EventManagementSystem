@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import Header from '../Header';
 import Footer from '../Footer';
+import { getCurrentUser, getAuthToken } from '../../utils/auth';
 
 const API_BASE = 'http://localhost:5000/api/events';
 
@@ -65,6 +66,7 @@ export default function Events() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const currentUser = useMemo(() => getCurrentUser(), []);
 
   const approvedCount = useMemo(
     () => events.filter((e) => e.status === 'Approved').length,
@@ -111,8 +113,21 @@ export default function Events() {
 
   const updateCount = async (id, action) => {
     try {
+      const currentUser = getCurrentUser();
+      if (!currentUser) {
+        throw new Error('Log in first to use this feature');
+      }
+
+      if (currentUser.userType !== 'Student') {
+        throw new Error("Sorry, you don't have proper authorization for this feature");
+      }
+
       const res = await fetch(`${API_BASE}/${id}/${action}`, {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       const data = await res.json();
@@ -125,8 +140,7 @@ export default function Events() {
         prevEvents.map((e) => (e._id === id ? data.data : e))
       );
 
-      const actionText =
-        action === 'register' ? 'registered for' : 'checked in to';
+      const actionText = action === 'register' ? 'registered for' : 'checked in to';
       setSuccess(`Successfully ${actionText} the event!`);
       setError('');
       clearMessagesLater();
@@ -709,6 +723,8 @@ export default function Events() {
                                 <button
                                   className="orange-button"
                                   onClick={() => updateCount(evt._id, 'register')}
+                                  disabled={!currentUser || currentUser.userType !== 'Student'}
+                                  style={{ cursor: !currentUser || currentUser.userType !== 'Student' ? 'not-allowed' : 'pointer', opacity: !currentUser || currentUser.userType !== 'Student' ? 0.6 : 1 }}
                                 >
                                   <i className="fas fa-user-plus me-1"></i> Register
                                 </button>
@@ -716,6 +732,8 @@ export default function Events() {
                                 <button
                                   className="orange-button"
                                   onClick={() => updateCount(evt._id, 'checkin')}
+                                  disabled={!currentUser || currentUser.userType !== 'Student'}
+                                  style={{ cursor: !currentUser || currentUser.userType !== 'Student' ? 'not-allowed' : 'pointer', opacity: !currentUser || currentUser.userType !== 'Student' ? 0.6 : 1 }}
                                 >
                                   <i className="fas fa-check-circle me-1"></i> Check-In
                                 </button>

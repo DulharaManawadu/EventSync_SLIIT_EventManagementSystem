@@ -4,8 +4,8 @@ dns.setServers(['8.8.8.8', '8.8.4.4']);
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('node:path');
 const { connectDB } = require('./config/db');
-const authMiddleware = require('./middleware/authMiddleware');
 
 // Load environment variables
 dotenv.config();
@@ -26,6 +26,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // ===== Request Logging (Development) =====
 if (process.env.NODE_ENV === 'development') {
@@ -56,6 +57,7 @@ app.get('/health', (req, res) => {
 });
 
 // ===== API Routes =====
+app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/venues', require('./routes/venueRoutes'));
 app.use('/api/sponsors', require('./routes/sponsorRoutes'));
