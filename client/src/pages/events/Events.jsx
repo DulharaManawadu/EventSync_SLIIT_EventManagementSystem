@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
+import QRCode from 'qrcode';
 import Header from '../Header';
 import Footer from '../Footer';
 import { getCurrentUser, getAuthToken } from '../../utils/auth';
 
 const API_BASE = 'http://localhost:5000/api/events';
+const REGISTRATION_API_BASE = 'http://localhost:5000/api/event-registrations';
 
 const categoryOptions = [
   'Technical',
@@ -68,6 +70,8 @@ export default function Events() {
   const [success, setSuccess] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [actionLoading, setActionLoading] = useState({});
+  const [qrModalData, setQrModalData] = useState(null);
   const currentUser = useMemo(() => getCurrentUser(), []);
 
   const approvedCount = useMemo(
@@ -131,19 +135,86 @@ export default function Events() {
     fetchEvents();
   }, []);
 
-  const updateCount = async (id, action) => {
+  const setEventFromResponse = (eventData) => {
+    if (!eventData?._id) return;
+    setEvents((prevEvents) =>
+      prevEvents.map((event) => (event._id === eventData._id ? eventData : event))
+    );
+  };
+
+  const runStudentGuard = () => {
+    const loggedUser = getCurrentUser();
+    if (!loggedUser) {
+      throw new Error('Log in first to use this feature');
+    }
+
+    if (loggedUser.userType !== 'Student') {
+      throw new Error("Sorry, you don't have proper authorization for this feature");
+    }
+
+    return loggedUser;
+  };
+
+  const handleRegister = async (eventItem) => {
     try {
-      const currentUser = getCurrentUser();
-      if (!currentUser) {
-        throw new Error('Log in first to use this feature');
+      runStudentGuard();
+
+      if (eventItem.status !== 'Approved') {
+        throw new Error('Registration is available only for approved events');
       }
 
-      if (currentUser.userType !== 'Student') {
-        throw new Error("Sorry, you don't have proper authorization for this feature");
+      setActionLoading((prev) => ({ ...prev, [eventItem._id]: 'register' }));
+
+      const res = await fetch(
+        `${REGISTRATION_API_BASE}/events/${eventItem._id}/register`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${getAuthToken()}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to register for event');
       }
 
-      const res = await fetch(`${API_BASE}/${id}/${action}`, {
-        method: 'POST',
+      setEventFromResponse(data?.data?.event);
+      setQrModalData({
+        event: data?.data?.event || eventItem,
+        registration: data?.data?.registration
+      });
+      setSuccess(
+        data?.data?.alreadyRegistered
+          ? 'You are already registered. Your QR code is ready to present to the admin.'
+          : 'Registration successful. Your QR code is ready to present to the admin.'
+      );
+      setError('');
+      clearMessagesLater();
+    } catch (err) {
+      setError(err.message || 'Registration failed');
+      setSuccess('');
+      clearMessagesLater();
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [eventItem._id]: '' }));
+    }
+  };
+
+  const handleCheckIn = async (eventItem) => {
+    try {
+      runStudentGuard();
+
+      if (eventItem.status !== 'Approved') {
+        throw new Error('Check-in is available only for approved events');
+      }
+
+      setActionLoading((prev) => ({ ...prev, [eventItem._id]: 'checkin' }));
+
+      const res = await fetch(`${REGISTRATION_API_BASE}/events/${eventItem._id}/me`, {
+        method: 'GET',
         headers: {
           Authorization: `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
@@ -153,25 +224,25 @@ export default function Events() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || `Failed to ${action}`);
+        throw new Error(data.message || 'Failed to load your QR code');
       }
 
-      setEvents((prevEvents) =>
-        prevEvents.map((e) => (e._id === id ? data.data : e))
-      );
-
-      const actionText = action === 'register' ? 'registered for' : 'checked in to';
-      setSuccess(`Successfully ${actionText} the event!`);
+      setEventFromResponse(data?.data?.event);
+      setQrModalData({
+        event: data?.data?.event || eventItem,
+        registration: data?.data?.registration
+      });
+      setSuccess('Show this QR code to the admin to confirm your attendance.');
       setError('');
       clearMessagesLater();
     } catch (err) {
-      setError(err.message || 'Action failed');
+      setError(err.message || 'Unable to open your event QR code');
       setSuccess('');
       clearMessagesLater();
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [eventItem._id]: '' }));
     }
   };
-
-
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this event?')) {
@@ -767,22 +838,76 @@ export default function Events() {
                               <div className="d-flex gap-2 mt-3 flex-wrap action-row">
                                 <button
                                   className="orange-button"
-                                  onClick={() => updateCount(evt._id, 'register')}
-                                  disabled={!currentUser || currentUser.userType !== 'Student'}
-                                  style={{ cursor: !currentUser || currentUser.userType !== 'Student' ? 'not-allowed' : 'pointer', opacity: !currentUser || currentUser.userType !== 'Student' ? 0.6 : 1 }}
+                                  onClick={() => handleRegister(evt)}
+                                  disabled={
+                                    !currentUser ||
+                                    currentUser.userType !== 'Student' ||
+                                    evt.status !== 'Approved' ||
+                                    Boolean(actionLoading[evt._id])
+                                  }
+                                  style={{
+                                    cursor:
+                                      !currentUser ||
+                                      currentUser.userType !== 'Student' ||
+                                      evt.status !== 'Approved' ||
+                                      Boolean(actionLoading[evt._id])
+                                        ? 'not-allowed'
+                                        : 'pointer',
+                                    opacity:
+                                      !currentUser ||
+                                      currentUser.userType !== 'Student' ||
+                                      evt.status !== 'Approved' ||
+                                      Boolean(actionLoading[evt._id])
+                                        ? 0.6
+                                        : 1
+                                  }}
                                 >
-                                  <i className="fas fa-user-plus me-1"></i> Register
+                                  <i className="fas fa-user-plus me-1"></i>
+                                  {actionLoading[evt._id] === 'register' ? ' Loading...' : ' Register'}
                                 </button>
 
                                 <button
                                   className="orange-button"
-                                  onClick={() => updateCount(evt._id, 'checkin')}
-                                  disabled={!currentUser || currentUser.userType !== 'Student'}
-                                  style={{ cursor: !currentUser || currentUser.userType !== 'Student' ? 'not-allowed' : 'pointer', opacity: !currentUser || currentUser.userType !== 'Student' ? 0.6 : 1 }}
+                                  onClick={() => handleCheckIn(evt)}
+                                  disabled={
+                                    !currentUser ||
+                                    currentUser.userType !== 'Student' ||
+                                    evt.status !== 'Approved' ||
+                                    Boolean(actionLoading[evt._id])
+                                  }
+                                  style={{
+                                    cursor:
+                                      !currentUser ||
+                                      currentUser.userType !== 'Student' ||
+                                      evt.status !== 'Approved' ||
+                                      Boolean(actionLoading[evt._id])
+                                        ? 'not-allowed'
+                                        : 'pointer',
+                                    opacity:
+                                      !currentUser ||
+                                      currentUser.userType !== 'Student' ||
+                                      evt.status !== 'Approved' ||
+                                      Boolean(actionLoading[evt._id])
+                                        ? 0.6
+                                        : 1
+                                  }}
                                 >
-                                  <i className="fas fa-check-circle me-1"></i> Check-In
+                                  <i className="fas fa-check-circle me-1"></i>
+                                  {actionLoading[evt._id] === 'checkin' ? ' Loading...' : ' Check-In'}
                                 </button>
                               </div>
+                              {currentUser?.userType === 'Student' && evt.status === 'Approved' && (
+                                <p
+                                  style={{
+                                    marginTop: '10px',
+                                    marginBottom: 0,
+                                    fontSize: '12px',
+                                    color: '#6b7280'
+                                  }}
+                                >
+                                  Register once to generate your personal QR, then use Check-In to show it to the admin scanner.
+                                </p>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -796,8 +921,169 @@ export default function Events() {
         </div>
       </section>
 
+      {qrModalData && (
+        <QrCodeModal
+          event={qrModalData.event}
+          registration={qrModalData.registration}
+          onClose={() => setQrModalData(null)}
+        />
+      )}
+
       <Footer />
     </>
+  );
+}
+
+function QrCodeModal({ event, registration, onClose }) {
+  const [qrImage, setQrImage] = useState('');
+
+  useEffect(() => {
+    let active = true;
+
+    const generateQr = async () => {
+      try {
+        const url = await QRCode.toDataURL(registration?.qrToken || '', {
+          width: 320,
+          margin: 2,
+          color: {
+            dark: '#0f172a',
+            light: '#ffffff'
+          }
+        });
+
+        if (active) {
+          setQrImage(url);
+        }
+      } catch (err) {
+        console.error('QR generation failed:', err);
+        if (active) {
+          setQrImage('');
+        }
+      }
+    };
+
+    generateQr();
+
+    return () => {
+      active = false;
+    };
+  }, [registration]);
+
+  if (!registration) return null;
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(15, 23, 42, 0.78)',
+        zIndex: 10000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px'
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '520px',
+          background: '#ffffff',
+          borderRadius: '24px',
+          boxShadow: '0 24px 80px rgba(15, 23, 42, 0.24)',
+          overflow: 'hidden'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          style={{
+            padding: '24px 28px',
+            background: 'linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%)',
+            color: '#ffffff'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
+            <div>
+              <div style={{ fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.8 }}>
+                Student Event QR
+              </div>
+              <h3 style={{ margin: '8px 0 6px' }}>{event?.title || 'Registered Event'}</h3>
+              <p style={{ margin: 0, opacity: 0.85, fontSize: '14px' }}>
+                Present this QR code to the admin scanner to confirm attendance.
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#ffffff',
+                fontSize: '28px',
+                lineHeight: 1,
+                cursor: 'pointer'
+              }}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        <div style={{ padding: '28px' }}>
+          <div
+            style={{
+              border: '1px solid #e2e8f0',
+              borderRadius: '20px',
+              padding: '20px',
+              background: '#f8fafc',
+              textAlign: 'center'
+            }}
+          >
+            {qrImage ? (
+              <img
+                src={qrImage}
+                alt={`QR code for ${event?.title || 'event'}`}
+                style={{ width: '100%', maxWidth: '280px', borderRadius: '16px' }}
+              />
+            ) : (
+              <p style={{ margin: '60px 0', color: '#64748b' }}>Preparing your QR code...</p>
+            )}
+          </div>
+
+          <div className="row" style={{ marginTop: '20px' }}>
+            <div className="col-sm-6 mb-3">
+              <div style={{ color: '#64748b', fontSize: '12px', textTransform: 'uppercase' }}>
+                Student
+              </div>
+              <div style={{ color: '#0f172a', fontWeight: 600 }}>{registration.studentName}</div>
+              <div style={{ color: '#64748b', fontSize: '13px' }}>{registration.studentUserId}</div>
+            </div>
+            <div className="col-sm-6 mb-3">
+              <div style={{ color: '#64748b', fontSize: '12px', textTransform: 'uppercase' }}>
+                Attendance
+              </div>
+              <div style={{ color: '#0f172a', fontWeight: 600 }}>{registration.attendanceStatus}</div>
+              <div style={{ color: '#64748b', fontSize: '13px' }}>
+                Registered {formatDate(registration.registeredAt)} at {formatTime(registration.registeredAt)}
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: '6px',
+              borderRadius: '16px',
+              padding: '14px 16px',
+              background: '#eff6ff',
+              color: '#1e3a8a',
+              fontSize: '13px'
+            }}
+          >
+            This QR is unique to your account and this event. Attendance is confirmed only after an admin scans it successfully.
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

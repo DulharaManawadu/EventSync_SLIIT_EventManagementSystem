@@ -58,6 +58,11 @@ export default function Header() {
                 <li className="scroll-to-section">
                   <a href="#testimonials">Testimonials</a>
                 </li>
+                {user?.userType === 'Student' && (
+                  <li>
+                    <Link to="/my-registrations">My Registrations</Link>
+                  </li>
+                )}
                 <li>
                   {user ? (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', color: '#ffffff' }}>
