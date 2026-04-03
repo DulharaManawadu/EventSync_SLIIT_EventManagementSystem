@@ -66,12 +66,32 @@ export default function Events() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
   const currentUser = useMemo(() => getCurrentUser(), []);
 
   const approvedCount = useMemo(
     () => events.filter((e) => e.status === 'Approved').length,
     [events]
   );
+
+  const filteredEvents = useMemo(() => {
+    let filtered = events;
+
+    if (statusFilter !== 'All') {
+      filtered = filtered.filter((e) => e.status === statusFilter);
+    }
+
+    if (searchTerm.trim()) {
+      const q = searchTerm.trim().toLowerCase();
+      filtered = filtered.filter((e) => {
+        const searchable = `${e.title || ''} ${e.description || ''} ${e.category || ''} ${e.faculty || ''} ${e.venue || ''} ${e.organizerName || e.organizer || ''}`.toLowerCase();
+        return searchable.includes(q);
+      });
+    }
+
+    return filtered;
+  }, [events, searchTerm, statusFilter]);
   const pendingCount = useMemo(
     () => events.filter((e) => e.status === 'Pending').length,
     [events]
@@ -363,6 +383,31 @@ export default function Events() {
                 </a>
               </div>
             </div>
+
+            <div className="col-lg-12 mb-3">
+              <div className="d-flex flex-wrap gap-2 align-items-center">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search events by title, organizer, venue..."
+                  className="form-control"
+                  style={{ minWidth: '240px', maxWidth: '360px' }}
+                />
+
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="form-control"
+                  style={{ maxWidth: '220px' }}
+                >
+                  <option value="All">All Status</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           {error && (
@@ -395,7 +440,7 @@ export default function Events() {
                     </div>
                   </div>
                 ) : (
-                  events.map((evt) => (
+                  filteredEvents.map((evt) => (
                     <div key={evt._id} className="col-lg-6 mb-4">
                       <div
                         className="service-item"
