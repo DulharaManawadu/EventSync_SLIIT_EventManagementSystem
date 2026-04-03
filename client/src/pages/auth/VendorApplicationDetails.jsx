@@ -114,9 +114,9 @@ export default function VendorApplicationDetails() {
             {application ? (
               <div>
                 <div style={{ borderBottom: '1px solid #e5e7eb', paddingBottom: '16px', marginBottom: '20px' }}>
-                  <p style={{ marginBottom: '12px' }}><strong>Event:</strong> {application.event?.title}</p>
-                  <p style={{ marginBottom: '12px' }}><strong>Date:</strong> {new Date(application.event?.date).toLocaleString()}</p>
-                  <p style={{ marginBottom: '12px' }}><strong>Location:</strong> {application.event?.venue || application.event?.societyName}</p>
+                  <p style={{ marginBottom: '12px' }}><strong>Event:</strong> {application.event?.title || application.eventTitle || 'Deleted Event'}</p>
+                  <p style={{ marginBottom: '12px' }}><strong>Date:</strong> {new Date(application.event?.date || application.eventDate || '').toLocaleString()}</p>
+                  <p style={{ marginBottom: '12px' }}><strong>Location:</strong> {application.event?.venue || application.event?.societyName || application.eventVenue || 'N/A'}</p>
                   <p style={{ marginBottom: 0 }}><strong>Status:</strong> {application.status}</p>
                 </div>
 

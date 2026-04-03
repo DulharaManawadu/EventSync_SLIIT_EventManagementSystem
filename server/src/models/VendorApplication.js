@@ -17,6 +17,19 @@ const vendorApplicationSchema = new mongoose.Schema(
       ref: 'Event',
       required: true
     },
+    eventTitle: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    eventDate: {
+      type: Date
+    },
+    eventVenue: {
+      type: String,
+      trim: true,
+      default: ''
+    },
     stallName: {
       type: String,
       required: true,

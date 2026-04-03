@@ -29,9 +29,24 @@ exports.getProfile = async (req, res) => {
 
     const applications = await VendorApplication.find({ vendor: userId }).populate('event', 'title date venue').lean();
 
+    const restored = applications.map((app) => {
+      if (!app.event || !app.event.title) {
+        return {
+          ...app,
+          event: {
+            title: app.eventTitle || 'Deleted Event',
+            date: app.eventDate || null,
+            venue: app.eventVenue || 'N/A',
+            missing: true
+          }
+        };
+      }
+      return app;
+    });
+
     const now = new Date();
-    const upcoming = applications.filter((app) => app.status !== 'Withdrawn' && app.event && new Date(app.event.date) >= now);
-    const past = applications.filter((app) => app.status === 'Approved' && app.event && new Date(app.event.date) < now);
+    const upcoming = restored.filter((app) => app.status !== 'Withdrawn' && app.event && app.event.date && new Date(app.event.date) >= now);
+    const past = restored.filter((app) => app.status === 'Approved' && app.event && app.event.date && new Date(app.event.date) < now);
 
     return res.status(200).json({
       success: true,
@@ -151,6 +166,9 @@ exports.applyForEvent = async (req, res) => {
     const application = await VendorApplication.create({
       vendor: vendorId,
       event: eventId,
+      eventTitle: existingEvent.title,
+      eventDate: existingEvent.date,
+      eventVenue: existingEvent.venue || existingEvent.societyName || '',
       stallName: stallName.trim(),
       foodType: foodType.trim(),
       menuItems: normalizedMenu,
@@ -171,7 +189,23 @@ exports.getApplications = async (req, res) => {
   try {
     const vendorId = req.user.id;
     const applications = await VendorApplication.find({ vendor: vendorId, status: { $ne: 'Withdrawn' } }).populate('event', 'title date venue').lean();
-    return res.status(200).json({ success: true, data: applications });
+
+    const normalized = applications.map((app) => {
+      if (!app.event || !app.event.title) {
+        return {
+          ...app,
+          event: {
+            title: app.eventTitle || 'Deleted Event',
+            date: app.eventDate || null,
+            venue: app.eventVenue || 'N/A',
+            missing: true
+          }
+        };
+      }
+      return app;
+    });
+
+    return res.status(200).json({ success: true, data: normalized });
   } catch (error) {
     console.error('Vendor get applications error:', error);
     return res.status(500).json({ success: false, message: 'Unable to fetch applications.', error: error.message });
@@ -186,7 +220,18 @@ exports.getApplicationById = async (req, res) => {
     if (!application) {
       return res.status(404).json({ success: false, message: 'Application not found.' });
     }
-    return res.status(200).json({ success: true, data: application });
+
+    const normalized = { ...application };
+    if (!normalized.event || !normalized.event.title) {
+      normalized.event = {
+        title: normalized.eventTitle || 'Deleted Event',
+        date: normalized.eventDate || null,
+        venue: normalized.eventVenue || 'N/A',
+        missing: true
+      };
+    }
+
+    return res.status(200).json({ success: true, data: normalized });
   } catch (error) {
     console.error('Vendor get application error:', error);
     return res.status(500).json({ success: false, message: 'Unable to fetch application.', error: error.message });

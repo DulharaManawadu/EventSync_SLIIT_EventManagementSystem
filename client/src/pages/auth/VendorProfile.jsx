@@ -122,8 +122,8 @@ export default function VendorProfile() {
                 <div style={{ maxHeight: '220px', overflowY: 'auto', borderTop: '1px solid #e2e8f0', paddingTop: '8px' }}>
                   {profile.upcomingApplications.map((app) => (
                     <div key={app._id} style={{ borderBottom: '1px dashed #cbd5e1', padding: '8px 0' }}>
-                      <strong>{app.event?.title || 'Unknown'}</strong><br />
-                      <small>{new Date(app.event?.date || '').toLocaleString()}</small><br />
+                      <strong>{app.event?.title || app.eventTitle || 'Unknown Event'}</strong><br />
+                      <small>{new Date(app.event?.date || app.eventDate || '').toLocaleString()}</small><br />
                       <small>Status: {app.status} | Stall: {app.stallName}</small>
                     </div>
                   ))}
@@ -139,8 +139,8 @@ export default function VendorProfile() {
                 <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '8px' }}>
                   {profile.pastParticipation.map((app) => (
                     <div key={app._id} style={{ borderBottom: '1px dashed #cbd5e1', padding: '8px 0' }}>
-                      <strong>{app.event?.title || 'Unknown'}</strong><br />
-                      <small>Date: {new Date(app.event?.date || '').toLocaleString()}</small><br />
+                      <strong>{app.event?.title || app.eventTitle || 'Unknown Event'}</strong><br />
+                      <small>Date: {new Date(app.event?.date || app.eventDate || '').toLocaleString()}</small><br />
                       <small>Food Type: {app.foodType}</small>
                     </div>
                   ))}

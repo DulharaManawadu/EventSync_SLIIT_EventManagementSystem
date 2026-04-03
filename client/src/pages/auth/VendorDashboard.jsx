@@ -97,7 +97,7 @@ export default function VendorDashboard() {
                   {applications.filter((app) => app.status !== 'Withdrawn').length === 0 && <p>No applications yet. Browse events to apply.</p>}
                   {applications.filter((app) => app.status !== 'Withdrawn').map((app) => (
                     <div key={app._id} style={{ background: '#fff', padding: '14px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,.05)' }}>
-                      <h3 style={{ margin: '0 0 8px' }}>{app.event?.title || 'Unknown Event'}</h3>
+                      <h3 style={{ margin: '0 0 8px' }}>{app.event?.title || app.eventTitle || 'Unknown Event'}</h3>
                       <p style={{ margin: '0 4px', color: '#475569' }}><strong>Status:</strong> {app.status}</p>
                       <p style={{ margin: '0 4px', color: '#475569' }}><strong>Stall:</strong> {app.stallName}</p>
                       <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between' }}>
@@ -116,7 +116,7 @@ export default function VendorDashboard() {
                     <div key={event._id} style={{ background: '#fff', marginBottom: '12px', padding: '14px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,.05)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '8px' }}>
                         <div>
-                          <h3 style={{ margin: 0 }}>{event.title}</h3>
+                          <h3 style={{ margin: 0 }}>{event.title || event.eventTitle || 'Unknown Event'}</h3>
                           <p style={{ margin: '4px 0', color: '#475569' }}>{new Date(event.date).toLocaleString()}</p>
                           <p style={{ margin: '4px 0', color: '#475569' }}><strong>Venue:</strong> {event.venue || event.societyName}</p>
                         </div>

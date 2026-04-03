@@ -10,7 +10,8 @@
     "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed": "node seedEvents.js",
-    "seed-sample": "node seedSampleEvents.js"
+    "seed-sample": "node seedSampleEvents.js",
+    "migrate-vendor-applications": "node migrateVendorApplicationsEventSnapshot.js"
   },
   "keywords": [
     "events",
