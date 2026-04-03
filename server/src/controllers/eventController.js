@@ -362,6 +362,8 @@ async function listEvents(req, res) {
     });
 
     const events = await Event.find(filterObj)
+      .populate("venueRef")                 // 🔥 add this
+      .populate("resources.resource") 
       .sort({ date: 1 })
       .skip(skip)
       .limit(limitNum);
@@ -404,7 +406,9 @@ async function getEvent(req, res) {
       });
     }
 
-    const event = await Event.findById(id);
+    const event = await Event.findById(id)
+    .populate("venueRef")
+    .populate("resources.resource");
 
     if (!event) {
       return res.status(404).json({
