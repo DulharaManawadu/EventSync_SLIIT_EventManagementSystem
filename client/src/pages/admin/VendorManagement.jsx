@@ -56,7 +56,7 @@ export default function VendorManagement() {
       const [appsData, vendorsData, eventsData] = await Promise.all([
         appsRes.json(), vendorsRes.json(), eventsRes.json(),
       ]);
-      if (appsData.success) setApplications(appsData.data);
+      if (appsData.success) setApplications(appsData.data.filter(a => a.status !== 'Withdrawn'));
       else throw new Error(appsData.message || 'Failed to load applications');
       if (vendorsData.success) setVendors(vendorsData.data);
       if (eventsData.success) setEvents(Array.isArray(eventsData.data) ? eventsData.data : []);
