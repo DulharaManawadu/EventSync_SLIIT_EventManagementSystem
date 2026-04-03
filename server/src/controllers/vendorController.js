@@ -299,3 +299,99 @@ exports.withdrawApplication = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Unable to withdraw application.', error: error.message });
   }
 };
+
+// ============================================================
+// ADMIN METHODS
+// ============================================================
+
+exports.getVendors = async (req, res) => {
+  try {
+    const vendors = await User.find({ userType: 'Vendor' })
+      .select('firstName lastName email brandName userId contactNumber')
+      .lean();
+    return res.status(200).json({ success: true, data: vendors });
+  } catch (error) {
+    console.error('Admin get vendors error:', error);
+    return res.status(500).json({ success: false, message: 'Unable to fetch vendors.' });
+  }
+};
+
+exports.getAllApplicationsAdmin = async (req, res) => {
+  try {
+    const { vendor, event, date } = req.query;
+    const query = {};
+    if (vendor) query.vendor = vendor;
+    if (event) query.event = event;
+    if (date) {
+      const d = new Date(date);
+      const next = new Date(d);
+      next.setDate(next.getDate() + 1);
+      query.eventDate = { $gte: d, $lt: next };
+    }
+    const applications = await VendorApplication.find(query)
+      .populate('vendor', 'firstName lastName email brandName userId contactNumber')
+      .populate('event', 'title date venue')
+      .sort({ appliedAt: -1 })
+      .lean();
+    const normalized = applications.map((app) => ({
+      ...app,
+      eventTitle: app.event?.title || app.eventTitle || 'Unknown Event',
+      eventDate: app.event?.date || app.eventDate || null,
+      eventVenue: app.event?.venue || app.eventVenue || '',
+    }));
+    return res.status(200).json({ success: true, data: normalized });
+  } catch (error) {
+    console.error('Admin get applications error:', error);
+    return res.status(500).json({ success: false, message: 'Unable to fetch applications.' });
+  }
+};
+
+exports.getApplicationByIdAdmin = async (req, res) => {
+  try {
+    const application = await VendorApplication.findById(req.params.id)
+      .populate('vendor', 'firstName lastName email brandName userId contactNumber')
+      .populate('event', 'title date venue')
+      .lean();
+    if (!application) return res.status(404).json({ success: false, message: 'Application not found.' });
+    const normalized = {
+      ...application,
+      eventTitle: application.event?.title || application.eventTitle || 'Unknown Event',
+      eventDate: application.event?.date || application.eventDate || null,
+      eventVenue: application.event?.venue || application.eventVenue || '',
+    };
+    return res.status(200).json({ success: true, data: normalized });
+  } catch (error) {
+    console.error('Admin get application error:', error);
+    return res.status(500).json({ success: false, message: 'Unable to fetch application.' });
+  }
+};
+
+exports.approveApplication = async (req, res) => {
+  try {
+    const application = await VendorApplication.findById(req.params.id);
+    if (!application) return res.status(404).json({ success: false, message: 'Application not found.' });
+    if (application.status !== 'Pending')
+      return res.status(400).json({ success: false, message: 'Only pending applications can be approved.' });
+    application.status = 'Approved';
+    await application.save();
+    return res.status(200).json({ success: true, message: 'Application approved successfully.', data: application });
+  } catch (error) {
+    console.error('Admin approve error:', error);
+    return res.status(500).json({ success: false, message: 'Unable to approve application.' });
+  }
+};
+
+exports.denyApplication = async (req, res) => {
+  try {
+    const application = await VendorApplication.findById(req.params.id);
+    if (!application) return res.status(404).json({ success: false, message: 'Application not found.' });
+    if (application.status !== 'Pending')
+      return res.status(400).json({ success: false, message: 'Only pending applications can be denied.' });
+    application.status = 'Declined';
+    await application.save();
+    return res.status(200).json({ success: true, message: 'Application denied successfully.', data: application });
+  } catch (error) {
+    console.error('Admin deny error:', error);
+    return res.status(500).json({ success: false, message: 'Unable to deny application.' });
+  }
+};

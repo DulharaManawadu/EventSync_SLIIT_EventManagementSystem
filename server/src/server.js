@@ -65,6 +65,7 @@ app.use('/api/venues', require('./routes/venueRoutes'));
 app.use('/api/sponsors', require('./routes/sponsorRoutes'));
 app.use('/api/resources', require('./routes/resourceRoutes'));
 app.use('/api/allocations', require('./routes/allocationRoutes'));
+app.use('/api/admin/vendors', require('./routes/vendorAdminRoutes'));
 
 
 // ===== 404 Handler =====
@@ -122,6 +123,16 @@ async function startServer() {
       console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`✓ API Base URL: http://localhost:${PORT}/api`);
       console.log('\n');
+    });
+
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`\n✗ Port ${PORT} is already in use.`);
+        console.error(`  Run: netstat -ano | findstr :${PORT}  then  taskkill /PID <pid> /F\n`);
+        process.exit(1);
+      } else {
+        throw err;
+      }
     });
 
     // Graceful shutdown
