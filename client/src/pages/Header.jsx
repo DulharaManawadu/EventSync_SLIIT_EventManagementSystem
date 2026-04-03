@@ -63,6 +63,11 @@ export default function Header() {
                     <Link to="/my-registrations">My Registrations</Link>
                   </li>
                 )}
+                {user && user.userType === 'Vendor' && (
+                  <li className="scroll-to-section">
+                    <Link to="/vendor-dashboard">Vendor Dashboard</Link>
+                  </li>
+                )}
                 <li>
                   {user ? (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', color: '#ffffff' }}>
@@ -71,6 +76,7 @@ export default function Header() {
                       </span>
                       <button
                         onClick={handleLogout}
+                        className="nav-logout-btn"
                         style={{
                           border: 'none',
                           background: 'transparent',
