@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import AdminSidebar from '../AdminSidebar';
-
+import { authFetch } from '../../../utils/auth';
 
 const API_BASE = 'http://localhost:5000/api/events';
 
 export default function EventApproval() {
   const [activeTab, setActiveTab] = useState('All');
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedEvents, setSelectedEvents] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -66,7 +67,7 @@ export default function EventApproval() {
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const response = await fetch(API_BASE);
+      const response = await authFetch(API_BASE);
       if (!response.ok) throw new Error('Failed to fetch events');
 
       const data = await response.json();
@@ -86,9 +87,22 @@ export default function EventApproval() {
   }, []);
 
   const filteredEvents = useMemo(() => {
-    if (activeTab === 'All') return events;
-    return events.filter((event) => event.status === activeTab);
-  }, [activeTab, events]);
+    let filtered = events;
+
+    if (activeTab !== 'All') {
+      filtered = filtered.filter((event) => event.status === activeTab);
+    }
+
+    if (searchTerm.trim()) {
+      const q = searchTerm.trim().toLowerCase();
+      filtered = filtered.filter((event) => {
+        const searchable = `${event.title || ''} ${event.description || ''} ${event.category || ''} ${event.faculty || ''} ${event.venue || ''} ${event.organizerName || event.organizer || ''}`.toLowerCase();
+        return searchable.includes(q);
+      });
+    }
+
+    return filtered;
+  }, [activeTab, events, searchTerm]);
 
   const tabs = [
     { key: 'All', label: 'All Events', count: events.length, icon: '📋' },
@@ -122,7 +136,7 @@ export default function EventApproval() {
 
   const handleStatusUpdate = async (eventId, newStatus) => {
     try {
-      const response = await fetch(`${API_BASE}/${eventId}`, {
+      const response = await authFetch(`${API_BASE}/${eventId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -166,7 +180,7 @@ export default function EventApproval() {
     try {
       const results = await Promise.all(
         selectedEvents.map(async (eventId) => {
-          const response = await fetch(`${API_BASE}/${eventId}`, {
+          const response = await authFetch(`${API_BASE}/${eventId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: mappedStatus })
@@ -206,7 +220,7 @@ export default function EventApproval() {
 
   const handleDelete = async (eventId) => {
     try {
-      const response = await fetch(`${API_BASE}/${eventId}`, {
+      const response = await authFetch(`${API_BASE}/${eventId}`, {
         method: 'DELETE'
       });
 
@@ -231,7 +245,7 @@ export default function EventApproval() {
 
   const handleUpdate = async (updatedData) => {
     try {
-      const response = await fetch(`${API_BASE}/${editingEvent._id}`, {
+      const response = await authFetch(`${API_BASE}/${editingEvent._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedData)
@@ -626,6 +640,41 @@ export default function EventApproval() {
               {error}
             </div>
           )}
+
+          <div style={{ marginBottom: '18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search events by title, organizer, venue..."
+              style={{
+                flex: '1 1 320px',
+                padding: '10px 14px',
+                borderRadius: '10px',
+                border: '1px solid #d1d5db',
+                fontSize: '14px',
+                minWidth: '220px'
+              }}
+            />
+            <select
+              value={activeTab}
+              onChange={(e) => setActiveTab(e.target.value)}
+              style={{
+                padding: '10px 14px',
+                borderRadius: '10px',
+                border: '1px solid #d1d5db',
+                background: '#fff',
+                fontSize: '14px',
+                fontWeight: '600',
+                minWidth: '170px'
+              }}
+            >
+              <option value="All">All Status</option>
+              <option value="Pending">Pending</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
 
           {selectedEvents.length > 0 && (
             <div style={styles.bulkBar}>

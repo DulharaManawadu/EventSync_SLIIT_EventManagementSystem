@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import AdminSidebar from '../AdminSidebar';
+import { authFetch } from '../../../utils/auth';
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -33,7 +34,7 @@ export default function AdminDashboardAnalytics() {
       if (start) params.append('startDate', start);
       if (end) params.append('endDate', end);
       const url = params.toString() ? `${API_BASE}?${params.toString()}` : API_BASE;
-      const res = await fetch(url);
+      const res = await authFetch(url);
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.message || 'Failed to fetch analytics');
       setData(json.data);

@@ -1,8 +1,27 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import logoImg from '../assets/images/logo.png';
+import { clearAuth, getCurrentUser } from '../utils/auth';
 
 export default function Header() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(getCurrentUser());
+
+  useEffect(() => {
+    const handleAuthChange = () => setUser(getCurrentUser());
+    window.addEventListener('storage', handleAuthChange);
+    window.addEventListener('authChange', handleAuthChange);
+    return () => {
+      window.removeEventListener('storage', handleAuthChange);
+      window.removeEventListener('authChange', handleAuthChange);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    clearAuth();
+    navigate('/');
+  };
+
   return (
     <header className="header-area header-sticky">
       <div className="container">
@@ -39,8 +58,40 @@ export default function Header() {
                 <li className="scroll-to-section">
                   <a href="#testimonials">Testimonials</a>
                 </li>
+                {user?.userType === 'Student' && (
+                  <li>
+                    <Link to="/my-registrations">My Registrations</Link>
+                  </li>
+                )}
+                {user && user.userType === 'Vendor' && (
+                  <li className="scroll-to-section">
+                    <Link to="/vendor-dashboard">Vendor Dashboard</Link>
+                  </li>
+                )}
                 <li>
-                  <Link to="/login">Login</Link>
+                  {user ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', color: '#ffffff' }}>
+                      <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>
+                        Welcome {user.firstName ? user.firstName : ''}
+                      </span>
+                      <button
+                        onClick={handleLogout}
+                        className="nav-logout-btn"
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          color: '#ffffff',
+                          cursor: 'pointer',
+                          font: 'inherit',
+                          padding: 0
+                        }}
+                      >
+                        Logout
+                      </button>
+                    </span>
+                  ) : (
+                    <Link to="/login">Login</Link>
+                  )}
                 </li>
               </ul>
               <a className="menu-trigger">

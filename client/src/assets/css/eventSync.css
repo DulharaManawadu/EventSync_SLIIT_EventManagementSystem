@@ -151,7 +151,9 @@ body {
   }
 }
 
-.green-button a {
+.green-button,
+.green-button a,
+.green-button button {
   font-size: 14px;
   color: #fff;
   background-color: #43ba7f;
@@ -164,11 +166,14 @@ body {
   transition: all .3s;
 }
 
-.green-button a:hover {
+.green-button a:hover,
+.green-button button:hover {
   opacity: 0.9;
 }
 
-.orange-button a {
+.orange-button,
+.orange-button a,
+.orange-button button {
   font-size: 14px;
   color: #fff;
   background-color: #ff511a;
@@ -181,8 +186,19 @@ body {
   transition: all .3s;
 }
 
-.orange-button a:hover {
+.orange-button a:hover,
+.orange-button button:hover {
   opacity: 0.9;
+}
+
+.green-button button,
+.orange-button button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
 }
 
 section {

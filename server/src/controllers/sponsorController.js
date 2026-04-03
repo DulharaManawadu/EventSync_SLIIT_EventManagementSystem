@@ -1,7 +1,7 @@
-import Sponsor from "../models/Sponsor.js";
+const Sponsor = require('../models/Sponsor');
 
 // APPLY SPONSOR
-export const applySponsor = async (req, res) => {
+const applySponsor = async (req, res) => {
   try {
     const {
       companyName,
@@ -35,7 +35,7 @@ export const applySponsor = async (req, res) => {
 };
 
 // GET ALL SPONSORS
-export const getSponsors = async (req, res) => {
+const getSponsors = async (req, res) => {
   try {
     const sponsors = await Sponsor.find().populate("event");
     res.json(sponsors);
@@ -45,7 +45,7 @@ export const getSponsors = async (req, res) => {
 };
 
 // APPROVE SPONSOR
-export const approveSponsor = async (req, res) => {
+const approveSponsor = async (req, res) => {
   try {
     const sponsor = await Sponsor.findById(req.params.id);
 
@@ -65,7 +65,7 @@ export const approveSponsor = async (req, res) => {
 };
 
 // REJECT SPONSOR
-export const rejectSponsor = async (req, res) => {
+const rejectSponsor = async (req, res) => {
   try {
     const { reason } = req.body;
 
@@ -84,4 +84,11 @@ export const rejectSponsor = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};
+
+module.exports = {
+  applySponsor,
+  getSponsors,
+  approveSponsor,
+  rejectSponsor
 };
