@@ -18,6 +18,8 @@ export default function EventAllocation() {
   const [viewEvent, setViewEvent] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
 
+  const [isEditMode, setIsEditMode] = useState(false);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -40,10 +42,26 @@ export default function EventAllocation() {
   };
 
   // OPEN MODAL
-  const openModal = (event) => {
+  const openModal = (event, edit = false) => {
     setSelectedEvent(event);
-    setSelectedVenue("");
-    setSelectedResources([]);
+    setIsEditMode(edit);
+  
+    if (edit) {
+      // Pre-fill existing allocation
+      setSelectedVenue(event.venueRef?._id || event.venueRef || "");
+  
+      setSelectedResources(
+        (event.resources || []).map(r => ({
+          resource: r.resource?._id || r.resource,
+          quantity: r.quantity
+        }))
+      );
+    } else {
+      // Fresh allocation
+      setSelectedVenue("");
+      setSelectedResources([]);
+    }
+  
     setShowModal(true);
   };
 
@@ -64,21 +82,83 @@ export default function EventAllocation() {
 
   // SUBMIT
   const handleSubmit = async () => {
+    // ===== VALIDATION =====
+    if (!selectedVenue) {
+      toast.error("Please select a venue");
+      return;
+    }
+  
+    if (selectedResources.length === 0) {
+      toast.error("Please add at least one resource");
+      return;
+    }
+  
+    for (let i = 0; i < selectedResources.length; i++) {
+      const r = selectedResources[i];
+  
+      if (!r.resource) {
+        toast.error(`Please select a resource in row ${i + 1}`);
+        return;
+      }
+  
+      if (!r.quantity || r.quantity <= 0) {
+        toast.error(`Invalid quantity in row ${i + 1}`);
+        return;
+      }
+  
+      const resObj = resources.find(x => x._id === r.resource);
+  
+      if (!resObj) {
+        toast.error(`Invalid resource selected`);
+        return;
+      }
+  
+      if (Number(r.quantity) > resObj.availableQuantity) {
+        toast.error(
+          `${resObj.name} only has ${resObj.availableQuantity} available`
+        );
+        return;
+      }
+    }
+  
+    // Prevent duplicates
+    const ids = selectedResources.map(r => r.resource);
+    if (ids.length !== new Set(ids).size) {
+      toast.error("Duplicate resources are not allowed");
+      return;
+    }
+  
+    // ===== CLEAN PAYLOAD =====
+    const payload = {
+      venueId: selectedVenue,
+      resources: selectedResources.map(r => ({
+        resource: r.resource,
+        quantity: Number(r.quantity)
+      }))
+    };
+  
     try {
-      await axios.put(
-        `http://localhost:5000/api/allocations/event/${selectedEvent._id}`,
-        {
-          venueId: selectedVenue,
-          resources: selectedResources
-        }
+      const url = isEditMode
+        ? `http://localhost:5000/api/allocations/event/${selectedEvent._id}/update`
+        : `http://localhost:5000/api/allocations/event/${selectedEvent._id}`;
+  
+      await axios.put(url, payload);
+  
+      toast.success(
+        isEditMode
+          ? "Allocation updated successfully"
+          : "Allocated successfully"
       );
-
-      toast.success("Allocated successfully");
+  
       setShowModal(false);
+      setSelectedResources([]);
+      setSelectedVenue("");
+      setIsEditMode(false);
+  
       fetchData();
-
+  
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed");
+      toast.error(err.response?.data?.message || "Operation failed");
     }
   };
 
@@ -141,6 +221,12 @@ export default function EventAllocation() {
                         >
                           View
                         </button>
+                        <button
+                          style={S.assignBtn}
+                          onClick={() => openModal(e, true)}
+                        >
+                          Edit
+                        </button>
                       </>
                     )}
                   </td>
@@ -155,15 +241,24 @@ export default function EventAllocation() {
       {showModal && selectedEvent && (
         <div style={S.overlay}>
           <div style={S.modal}>
-            <h3>Assign: {selectedEvent.title}</h3>
+
+            <h3>
+              {isEditMode ? "Update Allocation" : "Assign"}: {selectedEvent.title}
+            </h3>
 
             <label>Venue</label>
-            <select style={S.input} onChange={(e)=>setSelectedVenue(e.target.value)}>
-              <option value="">Select Venue</option>
-              {venues.map(v=>(
-                <option key={v._id} value={v._id}>{v.name}</option>
-              ))}
-            </select>
+            <select
+                style={S.input}
+                value={selectedVenue}
+                onChange={(e) => setSelectedVenue(e.target.value)}
+              >
+                <option value="">Select Venue</option>
+                {venues.map(v => (
+                  <option key={v._id} value={v._id}>
+                    {v.name}
+                  </option>
+                ))}
+              </select>
 
             <h4>Resources</h4>
 
@@ -172,6 +267,7 @@ export default function EventAllocation() {
                 <select style={S.input}
                   onChange={(e)=>updateResource(i,"resource",e.target.value)}
                 >
+
                   <option>Select Resource</option>
                   {resources.map(res=>(
                     <option key={res._id} value={res._id}>
@@ -180,10 +276,12 @@ export default function EventAllocation() {
                   ))}
                 </select>
 
+                
                 <input style={S.input}
                   type="number"
+                  min="1"
                   value={r.quantity}
-                  onChange={(e)=>updateResource(i,"quantity",e.target.value)}
+                  onChange={(e)=>updateResource(i,"quantity", Number(e.target.value))}
                 />
 
                 <button onClick={()=>removeResource(i)}>X</button>

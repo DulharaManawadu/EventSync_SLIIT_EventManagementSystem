@@ -51,7 +51,7 @@ function App() {
         <Route path="/events" element={<Events />} />
         <Route path="/my-registrations" element={<ProtectedRoute roles={['Student']}><MyRegistrations /></ProtectedRoute>} />
         <Route path="/analytics" element={<ProtectedRoute roles={['Admin']}><Analytics /></ProtectedRoute>} />
-        <Route path="/sponsers-events" element={<ProtectedRoute roles={['Sponsor']}><Sponserpage /></ProtectedRoute>} />
+        <Route path="/sponsers-events" element={<Sponserpage />} />
         
         {/* Admin Dashboard Routes */}
         <Route path="/admin-dashboard" element={<ProtectedRoute roles={['Admin']}><AdminDashboardAnalytics /></ProtectedRoute>} />

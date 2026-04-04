@@ -90,6 +90,7 @@ export default function Sponsors() {
             <thead>
               <tr>
                 <th style={S.th}>#</th>
+                <th style={S.th}>Event</th>
                 <th style={S.th}>Company</th>
                 <th style={S.th}>Email</th>
                 <th style={S.th}>Tier</th>
@@ -102,6 +103,9 @@ export default function Sponsors() {
               {filteredSponsors.map((s, i) => (
                 <tr key={s._id} style={S.row}>
                   <td style={S.td}>{i + 1}</td>
+                  <td style={S.td}>
+                    {s.event?.title || "N/A"}
+                  </td>
                   <td style={S.td}>{s.companyName}</td>
                   <td style={S.td}>{s.contactEmail}</td>
                   <td style={S.td}>{s.tier}</td>

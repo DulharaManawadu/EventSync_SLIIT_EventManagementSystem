@@ -1,9 +1,10 @@
 const Event = require('../models/Event');
-const Resource = require('../models/Resource').default;
-const Venue = require('../models/Venue').default;
+const Resource = require('../models/Resource');
+const Venue = require('../models/Venue');
 
 // ===== ALLOCATE EVENT =====
 exports.allocateEvent = async (req, res) => {
+
   try {
     const { venueId, resources } = req.body;
     const eventId = req.params.id;
