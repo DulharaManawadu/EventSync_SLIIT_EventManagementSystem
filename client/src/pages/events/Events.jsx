@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet';
 import QRCode from 'qrcode';
 import Header from '../Header';
 import Footer from '../Footer';
+import Commenting from './Commenting';
 import { getCurrentUser, getAuthToken } from '../../utils/auth';
 
 const API_BASE = 'http://localhost:5000/api/events';
@@ -558,6 +559,24 @@ export default function Events() {
                                 </span>
                               </div>
 
+                              {(evt.status === 'Rejected' || evt.status === 'Pending') && evt.rejectionReason && (
+                                <div
+                                  className="alert alert-warning"
+                                  style={{
+                                    fontSize: '13px',
+                                    padding: '10px 15px',
+                                    marginBottom: '15px',
+                                    borderRadius: '10px',
+                                    background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                                    border: '1px solid #f59e0b',
+                                    color: '#92400e'
+                                  }}
+                                >
+                                  <i className="fas fa-info-circle me-2"></i>
+                                  <strong>Admin Note:</strong> {evt.rejectionReason}
+                                </div>
+                              )}
+
                               {evt.description && (
                                 <p
                                   style={{
@@ -703,41 +722,8 @@ export default function Events() {
                                       fontSize: '13px'
                                     }}
                                   >
-                                    <i
-                                      className="fas fa-user-check me-2"
-                                      style={{ color: '#43ba7f' }}
-                                    ></i>
-                                    {evt.registrationCount || 0} registered
-                                  </div>
-                                </div>
-                                <div className="col-sm-4 mb-2">
-                                  <div
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      color: '#6b7280',
-                                      fontSize: '13px'
-                                    }}
-                                  >
-                                    <i
-                                      className="fas fa-clipboard-check me-2"
-                                      style={{ color: '#43ba7f' }}
-                                    ></i>
-                                    {evt.attendanceCount || 0} attended
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="row mb-3">
-                                <div className="col-sm-6 mb-2">
-                                  <div
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      color: '#6b7280',
-                                      fontSize: '13px'
-                                    }}
-                                  >
+                                   
+                             
                                     <i
                                       className="fas fa-user me-2"
                                       style={{ color: '#667eea' }}
@@ -911,6 +897,11 @@ export default function Events() {
                             </div>
                           </div>
                         </div>
+
+                        <Commenting 
+                          eventId={evt._id}
+                          currentUser={currentUser}
+                        />
                       </div>
                     </div>
                   ))
