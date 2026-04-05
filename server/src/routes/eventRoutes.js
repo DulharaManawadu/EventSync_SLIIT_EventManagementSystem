@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/eventController');
+const commentController = require('../controllers/commentController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 /**
@@ -28,6 +29,22 @@ router.put('/:id', authMiddleware.requireRole('Admin'), controller.updateEvent);
 
 // DELETE /api/events/:id - Delete an event
 router.delete('/:id', authMiddleware.requireRole('Admin'), controller.deleteEvent);
+
+// Comments routes
+// GET /api/events/:eventId/comments - Get comments for an event
+router.get('/:eventId/comments', authMiddleware.requireAuth, commentController.getComments);
+
+// POST /api/events/:eventId/comments - Add a comment to an event
+router.post('/:eventId/comments', authMiddleware.requireAuth, commentController.addComment);
+
+// PUT /api/events/:eventId/comments/:commentId - Update a comment
+router.put('/:eventId/comments/:commentId', authMiddleware.requireAuth, commentController.updateComment);
+
+// DELETE /api/events/:eventId/comments/:commentId - Delete a comment
+router.delete('/:eventId/comments/:commentId', authMiddleware.requireAuth, commentController.deleteComment);
+
+// POST /api/events/:eventId/comments/:commentId/like - Like/unlike a comment
+router.post('/:eventId/comments/:commentId/like', authMiddleware.requireAuth, commentController.toggleLike);
 
 // POST /api/events/:id/register - Register for an event
 router.post('/:id/register', authMiddleware.requireRole('Student'), controller.registerEvent);
