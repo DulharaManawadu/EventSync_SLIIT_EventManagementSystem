@@ -10,7 +10,8 @@
     "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed": "node seedEvents.js",
-    "seed-sample": "node seedSampleEvents.js"
+    "seed-sample": "node seedSampleEvents.js",
+    "migrate-vendor-applications": "node migrateVendorApplicationsEventSnapshot.js"
   },
   "keywords": [
     "events",
@@ -23,11 +24,14 @@
     "professional"
   ],
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.0.0",
     "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.0",
     "mongodb": "^7.1.0",
-    "mongoose": "^7.0.0"
+    "mongoose": "^7.0.0",
+    "multer": "^1.4.5-lts.2"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"

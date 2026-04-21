@@ -83,11 +83,34 @@ const EventSchema = new mongoose.Schema(
     },
 
     venue: {
-      type: String,
-      required: [true, 'Venue is required'],
-      trim: true,
-      minlength: [2, 'Venue must be at least 2 characters long'],
-      maxlength: [100, 'Venue cannot exceed 100 characters']
+      type: String, 
+      trim: true
+    },
+
+    venueRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Venue"
+    },
+
+    // ===== RESOURCES =====
+    resources: [
+      {
+        resource: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Resource",
+          required: true
+        },
+        quantity: {
+          type: Number,
+          required: true,
+          min: 1
+        }
+      }
+    ],
+
+    isAllocated: {
+      type: Boolean,
+      default: false
     },
 
     date: {

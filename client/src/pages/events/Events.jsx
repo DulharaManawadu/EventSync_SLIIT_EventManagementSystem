@@ -1,9 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
+import QRCode from 'qrcode';
 import Header from '../Header';
 import Footer from '../Footer';
+import Commenting from './Commenting';
+import { getCurrentUser, getAuthToken } from '../../utils/auth';
 
 const API_BASE = 'http://localhost:5000/api/events';
+const REGISTRATION_API_BASE = 'http://localhost:5000/api/event-registrations';
 
 const categoryOptions = [
   'Technical',
@@ -65,13 +69,34 @@ export default function Events() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [editingEvent, setEditingEvent] = useState(null);
-  const [showEditForm, setShowEditForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [actionLoading, setActionLoading] = useState({});
+  const [qrModalData, setQrModalData] = useState(null);
+  const currentUser = useMemo(() => getCurrentUser(), []);
 
   const approvedCount = useMemo(
     () => events.filter((e) => e.status === 'Approved').length,
     [events]
   );
+
+  const filteredEvents = useMemo(() => {
+    let filtered = events;
+
+    if (statusFilter !== 'All') {
+      filtered = filtered.filter((e) => e.status === statusFilter);
+    }
+
+    if (searchTerm.trim()) {
+      const q = searchTerm.trim().toLowerCase();
+      filtered = filtered.filter((e) => {
+        const searchable = `${e.title || ''} ${e.description || ''} ${e.category || ''} ${e.faculty || ''} ${e.venue || ''} ${e.organizerName || e.organizer || ''}`.toLowerCase();
+        return searchable.includes(q);
+      });
+    }
+
+    return filtered;
+  }, [events, searchTerm, statusFilter]);
   const pendingCount = useMemo(
     () => events.filter((e) => e.status === 'Pending').length,
     [events]
@@ -111,73 +136,112 @@ export default function Events() {
     fetchEvents();
   }, []);
 
-  const updateCount = async (id, action) => {
+  const setEventFromResponse = (eventData) => {
+    if (!eventData?._id) return;
+    setEvents((prevEvents) =>
+      prevEvents.map((event) => (event._id === eventData._id ? eventData : event))
+    );
+  };
+
+  const runStudentGuard = () => {
+    const loggedUser = getCurrentUser();
+    if (!loggedUser) {
+      throw new Error('Log in first to use this feature');
+    }
+
+    if (loggedUser.userType !== 'Student') {
+      throw new Error("Sorry, you don't have proper authorization for this feature");
+    }
+
+    return loggedUser;
+  };
+
+  const handleRegister = async (eventItem) => {
     try {
-      const res = await fetch(`${API_BASE}/${id}/${action}`, {
-        method: 'POST'
+      runStudentGuard();
+
+      if (eventItem.status !== 'Approved') {
+        throw new Error('Registration is available only for approved events');
+      }
+
+      setActionLoading((prev) => ({ ...prev, [eventItem._id]: 'register' }));
+
+      const res = await fetch(
+        `${REGISTRATION_API_BASE}/events/${eventItem._id}/register`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${getAuthToken()}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to register for event');
+      }
+
+      setEventFromResponse(data?.data?.event);
+      setQrModalData({
+        event: data?.data?.event || eventItem,
+        registration: data?.data?.registration
+      });
+      setSuccess(
+        data?.data?.alreadyRegistered
+          ? 'You are already registered. Your QR code is ready to present to the admin.'
+          : 'Registration successful. Your QR code is ready to present to the admin.'
+      );
+      setError('');
+      clearMessagesLater();
+    } catch (err) {
+      setError(err.message || 'Registration failed');
+      setSuccess('');
+      clearMessagesLater();
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [eventItem._id]: '' }));
+    }
+  };
+
+  const handleCheckIn = async (eventItem) => {
+    try {
+      runStudentGuard();
+
+      if (eventItem.status !== 'Approved') {
+        throw new Error('Check-in is available only for approved events');
+      }
+
+      setActionLoading((prev) => ({ ...prev, [eventItem._id]: 'checkin' }));
+
+      const res = await fetch(`${REGISTRATION_API_BASE}/events/${eventItem._id}/me`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || `Failed to ${action}`);
+        throw new Error(data.message || 'Failed to load your QR code');
       }
 
-      setEvents((prevEvents) =>
-        prevEvents.map((e) => (e._id === id ? data.data : e))
-      );
-
-      const actionText =
-        action === 'register' ? 'registered for' : 'checked in to';
-      setSuccess(`Successfully ${actionText} the event!`);
-      setError('');
-      clearMessagesLater();
-    } catch (err) {
-      setError(err.message || 'Action failed');
-      setSuccess('');
-      clearMessagesLater();
-    }
-  };
-
-  const handleEdit = (event) => {
-    setEditingEvent(event);
-    setShowEditForm(true);
-  };
-
-  const handleUpdate = async (updatedData) => {
-    try {
-      const res = await fetch(`${API_BASE}/${editingEvent._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(updatedData)
+      setEventFromResponse(data?.data?.event);
+      setQrModalData({
+        event: data?.data?.event || eventItem,
+        registration: data?.data?.registration
       });
-
-      const result = await res.json();
-
-      if (!res.ok) {
-        const errorMessage =
-          result.errors?.join(', ') ||
-          result.message ||
-          'Failed to update event';
-        throw new Error(errorMessage);
-      }
-
-      setEvents((prevEvents) =>
-        prevEvents.map((e) => (e._id === editingEvent._id ? result.data : e))
-      );
-
-      setShowEditForm(false);
-      setEditingEvent(null);
+      setSuccess('Show this QR code to the admin to confirm your attendance.');
       setError('');
-      setSuccess('Event updated successfully!');
       clearMessagesLater();
     } catch (err) {
-      console.error('Update error:', err);
-      setError(err.message || 'Failed to update event');
+      setError(err.message || 'Unable to open your event QR code');
       setSuccess('');
       clearMessagesLater();
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [eventItem._id]: '' }));
     }
   };
 
@@ -391,6 +455,31 @@ export default function Events() {
                 </a>
               </div>
             </div>
+
+            <div className="col-lg-12 mb-3">
+              <div className="d-flex flex-wrap gap-2 align-items-center">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search events by title, organizer, venue..."
+                  className="form-control"
+                  style={{ minWidth: '240px', maxWidth: '360px' }}
+                />
+
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="form-control"
+                  style={{ maxWidth: '220px' }}
+                >
+                  <option value="All">All Status</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           {error && (
@@ -411,36 +500,7 @@ export default function Events() {
             />
           )}
 
-          {showEditForm && editingEvent && (
-            <div className="row mb-4">
-              <div className="col-lg-12">
-                <div className="card">
-                  <div className="card-header d-flex justify-content-between align-items-center">
-                    <h5 className="mb-0">Edit Event: {editingEvent.title}</h5>
-                    <button
-                      className="btn btn-sm btn-outline-secondary"
-                      onClick={() => {
-                        setShowEditForm(false);
-                        setEditingEvent(null);
-                      }}
-                    >
-                      <i className="fas fa-times"></i>
-                    </button>
-                  </div>
-                  <div className="card-body">
-                    <EventEditForm
-                      event={editingEvent}
-                      onUpdate={handleUpdate}
-                      onCancel={() => {
-                        setShowEditForm(false);
-                        setEditingEvent(null);
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+
 
           <div className="row">
             <div className="col-lg-12">
@@ -452,7 +512,7 @@ export default function Events() {
                     </div>
                   </div>
                 ) : (
-                  events.map((evt) => (
+                  filteredEvents.map((evt) => (
                     <div key={evt._id} className="col-lg-6 mb-4">
                       <div
                         className="service-item"
@@ -498,6 +558,24 @@ export default function Events() {
                                   {evt.status || 'Unknown'}
                                 </span>
                               </div>
+
+                              {(evt.status === 'Rejected' || evt.status === 'Pending') && evt.rejectionReason && (
+                                <div
+                                  className="alert alert-warning"
+                                  style={{
+                                    fontSize: '13px',
+                                    padding: '10px 15px',
+                                    marginBottom: '15px',
+                                    borderRadius: '10px',
+                                    background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                                    border: '1px solid #f59e0b',
+                                    color: '#92400e'
+                                  }}
+                                >
+                                  <i className="fas fa-info-circle me-2"></i>
+                                  <strong>Admin Note:</strong> {evt.rejectionReason}
+                                </div>
+                              )}
 
                               {evt.description && (
                                 <p
@@ -644,41 +722,8 @@ export default function Events() {
                                       fontSize: '13px'
                                     }}
                                   >
-                                    <i
-                                      className="fas fa-user-check me-2"
-                                      style={{ color: '#43ba7f' }}
-                                    ></i>
-                                    {evt.registrationCount || 0} registered
-                                  </div>
-                                </div>
-                                <div className="col-sm-4 mb-2">
-                                  <div
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      color: '#6b7280',
-                                      fontSize: '13px'
-                                    }}
-                                  >
-                                    <i
-                                      className="fas fa-clipboard-check me-2"
-                                      style={{ color: '#43ba7f' }}
-                                    ></i>
-                                    {evt.attendanceCount || 0} attended
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="row mb-3">
-                                <div className="col-sm-6 mb-2">
-                                  <div
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      color: '#6b7280',
-                                      fontSize: '13px'
-                                    }}
-                                  >
+                                   
+                             
                                     <i
                                       className="fas fa-user me-2"
                                       style={{ color: '#667eea' }}
@@ -779,39 +824,84 @@ export default function Events() {
                               <div className="d-flex gap-2 mt-3 flex-wrap action-row">
                                 <button
                                   className="orange-button"
-                                  onClick={() => updateCount(evt._id, 'register')}
-                                >
-                                  <i className="fas fa-user-plus me-1"></i> Register
-                                </button>
-
-                                <button
-                                  className="orange-button"
-                                  onClick={() => updateCount(evt._id, 'checkin')}
-                                >
-                                  <i className="fas fa-check-circle me-1"></i> Check-In
-                                </button>
-
-                                <button
-                                  className="orange-button"
-                                  onClick={() => handleEdit(evt)}
-                                >
-                                  <i className="fas fa-edit me-1"></i> Edit
-                                </button>
-
-                                <button
-                                  className="orange-button"
-                                  onClick={() => handleDelete(evt._id)}
+                                  onClick={() => handleRegister(evt)}
+                                  disabled={
+                                    !currentUser ||
+                                    currentUser.userType !== 'Student' ||
+                                    evt.status !== 'Approved' ||
+                                    Boolean(actionLoading[evt._id])
+                                  }
                                   style={{
-                                    background:
-                                      'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)'
+                                    cursor:
+                                      !currentUser ||
+                                      currentUser.userType !== 'Student' ||
+                                      evt.status !== 'Approved' ||
+                                      Boolean(actionLoading[evt._id])
+                                        ? 'not-allowed'
+                                        : 'pointer',
+                                    opacity:
+                                      !currentUser ||
+                                      currentUser.userType !== 'Student' ||
+                                      evt.status !== 'Approved' ||
+                                      Boolean(actionLoading[evt._id])
+                                        ? 0.6
+                                        : 1
                                   }}
                                 >
-                                  <i className="fas fa-trash me-1"></i> Delete
+                                  <i className="fas fa-user-plus me-1"></i>
+                                  {actionLoading[evt._id] === 'register' ? ' Loading...' : ' Register'}
+                                </button>
+
+                                <button
+                                  className="orange-button"
+                                  onClick={() => handleCheckIn(evt)}
+                                  disabled={
+                                    !currentUser ||
+                                    currentUser.userType !== 'Student' ||
+                                    evt.status !== 'Approved' ||
+                                    Boolean(actionLoading[evt._id])
+                                  }
+                                  style={{
+                                    cursor:
+                                      !currentUser ||
+                                      currentUser.userType !== 'Student' ||
+                                      evt.status !== 'Approved' ||
+                                      Boolean(actionLoading[evt._id])
+                                        ? 'not-allowed'
+                                        : 'pointer',
+                                    opacity:
+                                      !currentUser ||
+                                      currentUser.userType !== 'Student' ||
+                                      evt.status !== 'Approved' ||
+                                      Boolean(actionLoading[evt._id])
+                                        ? 0.6
+                                        : 1
+                                  }}
+                                >
+                                  <i className="fas fa-check-circle me-1"></i>
+                                  {actionLoading[evt._id] === 'checkin' ? ' Loading...' : ' Check-In'}
                                 </button>
                               </div>
+                              {currentUser?.userType === 'Student' && evt.status === 'Approved' && (
+                                <p
+                                  style={{
+                                    marginTop: '10px',
+                                    marginBottom: 0,
+                                    fontSize: '12px',
+                                    color: '#6b7280'
+                                  }}
+                                >
+                                  Register once to generate your personal QR, then use Check-In to show it to the admin scanner.
+                                </p>
+                              )}
                             </div>
                           </div>
                         </div>
+
+                        <Commenting 
+                          eventId={evt._id}
+                          currentUser={currentUser}
+                        />
                       </div>
                     </div>
                   ))
@@ -822,8 +912,169 @@ export default function Events() {
         </div>
       </section>
 
+      {qrModalData && (
+        <QrCodeModal
+          event={qrModalData.event}
+          registration={qrModalData.registration}
+          onClose={() => setQrModalData(null)}
+        />
+      )}
+
       <Footer />
     </>
+  );
+}
+
+function QrCodeModal({ event, registration, onClose }) {
+  const [qrImage, setQrImage] = useState('');
+
+  useEffect(() => {
+    let active = true;
+
+    const generateQr = async () => {
+      try {
+        const url = await QRCode.toDataURL(registration?.qrToken || '', {
+          width: 320,
+          margin: 2,
+          color: {
+            dark: '#0f172a',
+            light: '#ffffff'
+          }
+        });
+
+        if (active) {
+          setQrImage(url);
+        }
+      } catch (err) {
+        console.error('QR generation failed:', err);
+        if (active) {
+          setQrImage('');
+        }
+      }
+    };
+
+    generateQr();
+
+    return () => {
+      active = false;
+    };
+  }, [registration]);
+
+  if (!registration) return null;
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(15, 23, 42, 0.78)',
+        zIndex: 10000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px'
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '520px',
+          background: '#ffffff',
+          borderRadius: '24px',
+          boxShadow: '0 24px 80px rgba(15, 23, 42, 0.24)',
+          overflow: 'hidden'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          style={{
+            padding: '24px 28px',
+            background: 'linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%)',
+            color: '#ffffff'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
+            <div>
+              <div style={{ fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.8 }}>
+                Student Event QR
+              </div>
+              <h3 style={{ margin: '8px 0 6px' }}>{event?.title || 'Registered Event'}</h3>
+              <p style={{ margin: 0, opacity: 0.85, fontSize: '14px' }}>
+                Present this QR code to the admin scanner to confirm attendance.
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#ffffff',
+                fontSize: '28px',
+                lineHeight: 1,
+                cursor: 'pointer'
+              }}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        <div style={{ padding: '28px' }}>
+          <div
+            style={{
+              border: '1px solid #e2e8f0',
+              borderRadius: '20px',
+              padding: '20px',
+              background: '#f8fafc',
+              textAlign: 'center'
+            }}
+          >
+            {qrImage ? (
+              <img
+                src={qrImage}
+                alt={`QR code for ${event?.title || 'event'}`}
+                style={{ width: '100%', maxWidth: '280px', borderRadius: '16px' }}
+              />
+            ) : (
+              <p style={{ margin: '60px 0', color: '#64748b' }}>Preparing your QR code...</p>
+            )}
+          </div>
+
+          <div className="row" style={{ marginTop: '20px' }}>
+            <div className="col-sm-6 mb-3">
+              <div style={{ color: '#64748b', fontSize: '12px', textTransform: 'uppercase' }}>
+                Student
+              </div>
+              <div style={{ color: '#0f172a', fontWeight: 600 }}>{registration.studentName}</div>
+              <div style={{ color: '#64748b', fontSize: '13px' }}>{registration.studentUserId}</div>
+            </div>
+            <div className="col-sm-6 mb-3">
+              <div style={{ color: '#64748b', fontSize: '12px', textTransform: 'uppercase' }}>
+                Attendance
+              </div>
+              <div style={{ color: '#0f172a', fontWeight: 600 }}>{registration.attendanceStatus}</div>
+              <div style={{ color: '#64748b', fontSize: '13px' }}>
+                Registered {formatDate(registration.registeredAt)} at {formatTime(registration.registeredAt)}
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: '6px',
+              borderRadius: '16px',
+              padding: '14px 16px',
+              background: '#eff6ff',
+              color: '#1e3a8a',
+              fontSize: '13px'
+            }}
+          >
+            This QR is unique to your account and this event. Attendance is confirmed only after an admin scans it successfully.
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -894,611 +1145,3 @@ function ToastMessage({ type, title, message, onClose }) {
   );
 }
 
-function EventEditForm({ event, onUpdate, onCancel }) {
-  const [formData, setFormData] = useState({
-    title: event.title || '',
-    description: event.description || '',
-    category: event.category || 'Technical',
-    eventType: event.eventType || 'Physical',
-    faculty: event.faculty || 'Computing',
-    department: event.department || '',
-    venue: event.venue || '',
-    date: event.date ? new Date(event.date).toISOString().slice(0, 16) : '',
-    endDate: event.endDate ? new Date(event.endDate).toISOString().slice(0, 16) : '',
-    capacity: event.capacity || '',
-    organizerName: event.organizerName || event.organizer || '',
-    organizerEmail: event.organizerEmail || '',
-    phoneNumbers: Array.isArray(event.phoneNumbers)
-      ? event.phoneNumbers.join(', ')
-      : '',
-    societyName: event.societyName || '',
-    budget: event.budget || '',
-    tags: Array.isArray(event.tags) ? event.tags.join(', ') : '',
-    sponsorshipEnabled: !!event.sponsorshipEnabled,
-    goldTier:
-      event.sponsorshipTiers?.find((t) => t.tierName === 'Gold')?.price || '',
-    goldBenefits:
-      event.sponsorshipTiers?.find((t) => t.tierName === 'Gold')?.benefits || '',
-    silverTier:
-      event.sponsorshipTiers?.find((t) => t.tierName === 'Silver')?.price || '',
-    silverBenefits:
-      event.sponsorshipTiers?.find((t) => t.tierName === 'Silver')?.benefits || '',
-    bronzeTier:
-      event.sponsorshipTiers?.find((t) => t.tierName === 'Bronze')?.price || '',
-    bronzeBenefits:
-      event.sponsorshipTiers?.find((t) => t.tierName === 'Bronze')?.benefits || ''
-  });
-
-  const [errors, setErrors] = useState({});
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-
-    if (name === 'sponsorshipEnabled') {
-      setFormData((prev) => ({
-        ...prev,
-        sponsorshipEnabled: checked,
-        ...(checked
-          ? {}
-          : {
-              goldTier: '',
-              goldBenefits: '',
-              silverTier: '',
-              silverBenefits: '',
-              bronzeTier: '',
-              bronzeBenefits: ''
-            })
-      }));
-      return;
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-
-    setErrors((prev) => ({ ...prev, [name]: '' }));
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.title.trim()) newErrors.title = 'Title is required';
-    if (!formData.description.trim()) newErrors.description = 'Description is required';
-    if (!formData.venue.trim()) newErrors.venue = 'Venue is required';
-    if (!formData.date) newErrors.date = 'Date is required';
-    if (!formData.capacity || Number(formData.capacity) < 1) {
-      newErrors.capacity = 'Capacity must be at least 1';
-    }
-    if (!formData.organizerName.trim()) {
-      newErrors.organizerName = 'Organizer name is required';
-    }
-    if (!formData.societyName.trim()) {
-      newErrors.societyName = 'Society name is required';
-    }
-    if (!formData.phoneNumbers.trim()) {
-      newErrors.phoneNumbers = 'At least one phone number is required';
-    }
-
-    if (formData.organizerEmail) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.organizerEmail.trim())) {
-        newErrors.organizerEmail = 'Invalid email address';
-      }
-    }
-
-    if (formData.endDate && formData.date) {
-      const start = new Date(formData.date);
-      const end = new Date(formData.endDate);
-      if (end <= start) {
-        newErrors.endDate = 'End date must be after start date';
-      }
-    }
-
-    if (formData.sponsorshipEnabled) {
-      const hasAnyTier =
-        formData.goldTier ||
-        formData.goldBenefits ||
-        formData.silverTier ||
-        formData.silverBenefits ||
-        formData.bronzeTier ||
-        formData.bronzeBenefits;
-
-      if (!hasAnyTier) {
-        newErrors.sponsorshipEnabled = 'Fill at least one sponsorship tier';
-      }
-    }
-
-    return newErrors;
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    const formErrors = validateForm();
-
-    if (Object.keys(formErrors).length > 0) {
-      setErrors(formErrors);
-      window.alert(
-        `Please fix the following issues:\n\n• ${Object.values(formErrors).join(
-          '\n• '
-        )}`
-      );
-      return;
-    }
-
-    const sponsorshipTiers = [];
-
-    if (formData.sponsorshipEnabled) {
-      if (formData.goldTier && formData.goldBenefits.trim()) {
-        sponsorshipTiers.push({
-          tierName: 'Gold',
-          price: Number(formData.goldTier),
-          benefits: formData.goldBenefits.trim()
-        });
-      }
-
-      if (formData.silverTier && formData.silverBenefits.trim()) {
-        sponsorshipTiers.push({
-          tierName: 'Silver',
-          price: Number(formData.silverTier),
-          benefits: formData.silverBenefits.trim()
-        });
-      }
-
-      if (formData.bronzeTier && formData.bronzeBenefits.trim()) {
-        sponsorshipTiers.push({
-          tierName: 'Bronze',
-          price: Number(formData.bronzeTier),
-          benefits: formData.bronzeBenefits.trim()
-        });
-      }
-    }
-
-    onUpdate({
-      title: formData.title.trim(),
-      description: formData.description.trim(),
-      category: formData.category,
-      eventType: formData.eventType,
-      faculty: formData.faculty,
-      department: formData.department.trim(),
-      venue: formData.venue.trim(),
-      date: formData.date,
-      endDate: formData.endDate || undefined,
-      capacity: Number(formData.capacity),
-      organizerName: formData.organizerName.trim(),
-      organizer: formData.organizerName.trim(),
-      organizerEmail: formData.organizerEmail.trim(),
-      phoneNumbers: formData.phoneNumbers
-        .split(',')
-        .map((p) => p.trim())
-        .filter(Boolean),
-      societyName: formData.societyName.trim(),
-      budget: formData.budget === '' ? 0 : Number(formData.budget),
-      tags: formData.tags
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-      sponsorshipEnabled: formData.sponsorshipEnabled,
-      sponsorshipTiers
-    });
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <div className="row">
-        <div className="col-md-6">
-          <div className="form-group mb-3">
-            <label className="form-label">Title</label>
-            <input
-              type="text"
-              className="form-control"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              required
-            />
-            {errors.title && <small className="text-danger">{errors.title}</small>}
-          </div>
-        </div>
-
-        <div className="col-md-6">
-          <div className="form-group mb-3">
-            <label className="form-label">Category</label>
-            <select
-              className="form-control"
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              required
-            >
-              {categoryOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div className="row">
-        <div className="col-md-12">
-          <div className="form-group mb-3">
-            <label className="form-label">Description</label>
-            <textarea
-              className="form-control"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows="3"
-              required
-            />
-            {errors.description && (
-              <small className="text-danger">{errors.description}</small>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="row">
-        <div className="col-md-6">
-          <div className="form-group mb-3">
-            <label className="form-label">Date</label>
-            <input
-              type="datetime-local"
-              className="form-control"
-              name="date"
-              value={formData.date}
-              onChange={handleChange}
-              required
-            />
-            {errors.date && <small className="text-danger">{errors.date}</small>}
-          </div>
-        </div>
-
-        <div className="col-md-6">
-          <div className="form-group mb-3">
-            <label className="form-label">End Date</label>
-            <input
-              type="datetime-local"
-              className="form-control"
-              name="endDate"
-              value={formData.endDate}
-              onChange={handleChange}
-            />
-            {errors.endDate && (
-              <small className="text-danger">{errors.endDate}</small>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="row">
-        <div className="col-md-6">
-          <div className="form-group mb-3">
-            <label className="form-label">Venue</label>
-            <input
-              type="text"
-              className="form-control"
-              name="venue"
-              value={formData.venue}
-              onChange={handleChange}
-              required
-            />
-            {errors.venue && <small className="text-danger">{errors.venue}</small>}
-          </div>
-        </div>
-
-        <div className="col-md-6">
-          <div className="form-group mb-3">
-            <label className="form-label">Faculty</label>
-            <select
-              className="form-control"
-              name="faculty"
-              value={formData.faculty}
-              onChange={handleChange}
-              required
-            >
-              {facultyOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div className="row">
-        <div className="col-md-6">
-          <div className="form-group mb-3">
-            <label className="form-label">Event Type</label>
-            <select
-              className="form-control"
-              name="eventType"
-              value={formData.eventType}
-              onChange={handleChange}
-            >
-              {eventTypeOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="col-md-6">
-          <div className="form-group mb-3">
-            <label className="form-label">Department</label>
-            <input
-              type="text"
-              className="form-control"
-              name="department"
-              value={formData.department}
-              onChange={handleChange}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="row">
-        <div className="col-md-6">
-          <div className="form-group mb-3">
-            <label className="form-label">Capacity</label>
-            <input
-              type="number"
-              className="form-control"
-              name="capacity"
-              value={formData.capacity}
-              onChange={handleChange}
-              min="1"
-              required
-            />
-            {errors.capacity && (
-              <small className="text-danger">{errors.capacity}</small>
-            )}
-          </div>
-        </div>
-
-        <div className="col-md-6">
-          <div className="form-group mb-3">
-            <label className="form-label">Budget (LKR)</label>
-            <input
-              type="number"
-              className="form-control"
-              name="budget"
-              value={formData.budget}
-              onChange={handleChange}
-              min="0"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="row">
-        <div className="col-md-6">
-          <div className="form-group mb-3">
-            <label className="form-label">Organizer Name</label>
-            <input
-              type="text"
-              className="form-control"
-              name="organizerName"
-              value={formData.organizerName}
-              onChange={handleChange}
-              required
-            />
-            {errors.organizerName && (
-              <small className="text-danger">{errors.organizerName}</small>
-            )}
-          </div>
-        </div>
-
-        <div className="col-md-6">
-          <div className="form-group mb-3">
-            <label className="form-label">Organizer Email</label>
-            <input
-              type="email"
-              className="form-control"
-              name="organizerEmail"
-              value={formData.organizerEmail}
-              onChange={handleChange}
-            />
-            {errors.organizerEmail && (
-              <small className="text-danger">{errors.organizerEmail}</small>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="row">
-        <div className="col-md-6">
-          <div className="form-group mb-3">
-            <label className="form-label">Phone Numbers</label>
-            <input
-              type="text"
-              className="form-control"
-              name="phoneNumbers"
-              value={formData.phoneNumbers}
-              onChange={handleChange}
-              placeholder="Comma-separated phone numbers"
-              required
-            />
-            {errors.phoneNumbers && (
-              <small className="text-danger">{errors.phoneNumbers}</small>
-            )}
-          </div>
-        </div>
-
-        <div className="col-md-6">
-          <div className="form-group mb-3">
-            <label className="form-label">Society Name</label>
-            <input
-              type="text"
-              className="form-control"
-              name="societyName"
-              value={formData.societyName}
-              onChange={handleChange}
-              required
-            />
-            {errors.societyName && (
-              <small className="text-danger">{errors.societyName}</small>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="row">
-        <div className="col-md-12">
-          <div className="form-group mb-3">
-            <label className="form-label">Tags</label>
-            <input
-              type="text"
-              className="form-control"
-              name="tags"
-              value={formData.tags}
-              onChange={handleChange}
-              placeholder="Comma-separated tags"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="row mb-3">
-        <div className="col-md-12">
-          <div
-            style={{
-              background: '#f8fafc',
-              border: errors.sponsorshipEnabled
-                ? '1px solid #ef4444'
-                : '1px solid #dbe4ee',
-              borderRadius: '16px',
-              padding: '18px 20px'
-            }}
-          >
-            <label
-              htmlFor="sponsorshipEnabled"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                margin: 0,
-                cursor: 'pointer',
-                fontWeight: '600',
-                color: '#2d3748',
-                fontSize: '16px'
-              }}
-            >
-              <input
-                type="checkbox"
-                name="sponsorshipEnabled"
-                id="sponsorshipEnabled"
-                checked={formData.sponsorshipEnabled}
-                onChange={handleChange}
-                style={{
-                  width: '18px',
-                  height: '18px',
-                  minWidth: '18px',
-                  margin: 0,
-                  padding: 0,
-                  accentColor: '#ff6b35',
-                  cursor: 'pointer',
-                  appearance: 'auto',
-                  WebkitAppearance: 'checkbox',
-                  MozAppearance: 'checkbox',
-                  border: 'none',
-                  outline: 'none',
-                  boxShadow: 'none',
-                  background: 'transparent'
-                }}
-              />
-              Enable Sponsorship Registration
-            </label>
-            {errors.sponsorshipEnabled && (
-              <small className="text-danger d-block mt-2">
-                {errors.sponsorshipEnabled}
-              </small>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {formData.sponsorshipEnabled && (
-        <div className="row">
-          <div className="col-md-4">
-            <div className="form-group mb-3">
-              <label className="form-label">Gold Tier Price</label>
-              <input
-                type="number"
-                className="form-control"
-                name="goldTier"
-                value={formData.goldTier}
-                onChange={handleChange}
-              />
-              <textarea
-                className="form-control mt-2"
-                name="goldBenefits"
-                value={formData.goldBenefits}
-                onChange={handleChange}
-                rows="3"
-                placeholder="Gold benefits"
-              />
-            </div>
-          </div>
-
-          <div className="col-md-4">
-            <div className="form-group mb-3">
-              <label className="form-label">Silver Tier Price</label>
-              <input
-                type="number"
-                className="form-control"
-                name="silverTier"
-                value={formData.silverTier}
-                onChange={handleChange}
-              />
-              <textarea
-                className="form-control mt-2"
-                name="silverBenefits"
-                value={formData.silverBenefits}
-                onChange={handleChange}
-                rows="3"
-                placeholder="Silver benefits"
-              />
-            </div>
-          </div>
-
-          <div className="col-md-4">
-            <div className="form-group mb-3">
-              <label className="form-label">Bronze Tier Price</label>
-              <input
-                type="number"
-                className="form-control"
-                name="bronzeTier"
-                value={formData.bronzeTier}
-                onChange={handleChange}
-              />
-              <textarea
-                className="form-control mt-2"
-                name="bronzeBenefits"
-                value={formData.bronzeBenefits}
-                onChange={handleChange}
-                rows="3"
-                placeholder="Bronze benefits"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="d-flex gap-2 flex-wrap">
-        <button type="submit" className="orange-button">
-          <i className="fas fa-save me-1"></i> Save Changes
-        </button>
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          <i className="fas fa-times me-1"></i> Cancel
-        </button>
-      </div>
-    </form>
-  );
-}

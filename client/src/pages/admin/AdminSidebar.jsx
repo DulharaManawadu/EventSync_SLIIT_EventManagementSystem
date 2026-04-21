@@ -14,16 +14,38 @@ export default function AdminSidebar() {
       description: 'Analytics Overview'
     },
     {
+      name: 'Venues',
+      path: '/venues',
+      description: 'Venue Management'
+    },
+    {
+      name: 'Resources',
+      path: '/resources',
+      description: 'Resource Management'
+    },
+    {
       name: 'Event Management',
       path: '/event-approval',
       // icon: '📅',
       description: 'Event Approval System'
     },
     {
+      name: 'Event Allocation',
+      path: '/event-allocation',
+      // icon: '📅',
+      description: 'Event Allocation System'
+    },
+    {
       name: 'QR Generation',
       path: '/qr-generation',
       // icon: '📱',
       description: 'QR Code Management'
+    },
+    
+    {
+      name: 'Sponsors',
+      path: '/sponsors',
+      description: 'Sponsor Management'
     },
     {
       name: 'Sponsorship',

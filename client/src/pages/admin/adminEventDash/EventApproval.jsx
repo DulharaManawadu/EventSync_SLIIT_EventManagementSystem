@@ -1,18 +1,23 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import AdminSidebar from '../AdminSidebar';
-
+import { authFetch } from '../../../utils/auth';
 
 const API_BASE = 'http://localhost:5000/api/events';
 
 export default function EventApproval() {
   const [activeTab, setActiveTab] = useState('All');
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedEvents, setSelectedEvents] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [toastMessage, setToastMessage] = useState(null); // { type: 'success'|'error', text: '', status: 'Approved'|'Pending'|'Rejected' }
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [reasonModal, setReasonModal] = useState(null); // { eventId, newStatus, isBulk: false }
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -55,10 +60,15 @@ export default function EventApproval() {
     }
   };
 
+  const showToastNotification = (type, text, status) => {
+    setToastMessage({ type, text, status });
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const response = await fetch(API_BASE);
+      const response = await authFetch(API_BASE);
       if (!response.ok) throw new Error('Failed to fetch events');
 
       const data = await response.json();
@@ -78,31 +88,22 @@ export default function EventApproval() {
   }, []);
 
   const filteredEvents = useMemo(() => {
-    if (activeTab === 'All') return events;
-    return events.filter((event) => event.status === activeTab);
-  }, [activeTab, events]);
+    let filtered = events;
 
-  const tabs = [
-    { key: 'All', label: 'All Events', count: events.length, icon: '📋' },
-    {
-      key: 'Pending',
-      label: 'Pending',
-      count: events.filter((e) => e.status === 'Pending').length,
-      icon: '⏳'
-    },
-    {
-      key: 'Approved',
-      label: 'Approved',
-      count: events.filter((e) => e.status === 'Approved').length,
-      icon: '✅'
-    },
-    {
-      key: 'Rejected',
-      label: 'Rejected',
-      count: events.filter((e) => e.status === 'Rejected').length,
-      icon: '❌'
+    if (activeTab !== 'All') {
+      filtered = filtered.filter((event) => event.status === activeTab);
     }
-  ];
+
+    if (searchTerm.trim()) {
+      const q = searchTerm.trim().toLowerCase();
+      filtered = filtered.filter((event) => {
+        const searchable = `${event.title || ''} ${event.description || ''} ${event.category || ''} ${event.faculty || ''} ${event.venue || ''} ${event.organizerName || event.organizer || ''}`.toLowerCase();
+        return searchable.includes(q);
+      });
+    }
+
+    return filtered;
+  }, [activeTab, events, searchTerm]);
 
   const handleEventSelection = (eventId) => {
     setSelectedEvents((prev) =>
@@ -113,11 +114,23 @@ export default function EventApproval() {
   };
 
   const handleStatusUpdate = async (eventId, newStatus) => {
+    if (newStatus === 'Rejected' || newStatus === 'Pending') {
+      setReasonModal({ eventId, newStatus, isBulk: false });
+      return;
+    }
+
+    await performStatusUpdate(eventId, newStatus);
+  };
+
+  const performStatusUpdate = async (eventId, newStatus, reason = '') => {
     try {
-      const response = await fetch(`${API_BASE}/${eventId}`, {
+      const body = { status: newStatus };
+      if (reason) body.rejectionReason = reason;
+
+      const response = await authFetch(`${API_BASE}/${eventId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify(body)
       });
 
       const result = await response.json();
@@ -134,27 +147,33 @@ export default function EventApproval() {
         prev.map((event) => (event._id === eventId ? result.data : event))
       );
 
-      showTemporaryMessage('success', `Event status updated to ${newStatus}`);
+      const msg = `Event status updated to ${newStatus}`;
+      showTemporaryMessage('success', msg);
+      showToastNotification('success', msg, newStatus);
     } catch (err) {
       console.error(err);
-      showTemporaryMessage('error', err.message || 'Failed to update status');
+      const errMsg = err.message || 'Failed to update status';
+      showTemporaryMessage('error', errMsg);
+      showToastNotification('error', errMsg, null);
     }
   };
 
   const handleBulkAction = async (action) => {
     if (selectedEvents.length === 0) return;
 
-    const mappedStatus =
-      action === 'approve'
-        ? 'Approved'
-        : action === 'reject'
-        ? 'Rejected'
-        : 'Pending';
+    let mappedStatus;
+    if (action === 'approve') {
+      mappedStatus = 'Approved';
+    } else if (action === 'reject') {
+      mappedStatus = 'Rejected';
+    } else {
+      mappedStatus = 'Pending';
+    }
 
     try {
       const results = await Promise.all(
         selectedEvents.map(async (eventId) => {
-          const response = await fetch(`${API_BASE}/${eventId}`, {
+          const response = await authFetch(`${API_BASE}/${eventId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: mappedStatus })
@@ -182,18 +201,19 @@ export default function EventApproval() {
       );
 
       setSelectedEvents([]);
-      showTemporaryMessage(
-        'success',
-        `Successfully updated ${results.length} event(s) to ${mappedStatus}`
-      );
+      const msg = `Successfully updated ${results.length} event(s) to ${mappedStatus}`;
+      showTemporaryMessage('success', msg);
+      showToastNotification('success', msg, mappedStatus);
     } catch (err) {
-      showTemporaryMessage('error', err.message || 'Bulk update failed');
+      const errMsg = err.message || 'Bulk update failed';
+      showTemporaryMessage('error', errMsg);
+      showToastNotification('error', errMsg, null);
     }
   };
 
   const handleDelete = async (eventId) => {
     try {
-      const response = await fetch(`${API_BASE}/${eventId}`, {
+      const response = await authFetch(`${API_BASE}/${eventId}`, {
         method: 'DELETE'
       });
 
@@ -211,11 +231,65 @@ export default function EventApproval() {
     }
   };
 
+  const handleEdit = (event) => {
+    setEditingEvent(event);
+    setShowEditForm(true);
+  };
+
+  const handleUpdate = async (updatedData) => {
+    try {
+      const response = await authFetch(`${API_BASE}/${editingEvent._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.errors?.join(', ') ||
+            result.message ||
+            'Failed to update event'
+        );
+      }
+
+      setEvents((prev) =>
+        prev.map((event) => (event._id === editingEvent._id ? result.data : event))
+      );
+
+      setShowEditForm(false);
+      setEditingEvent(null);
+      showTemporaryMessage('success', 'Event updated successfully');
+    } catch (err) {
+      console.error('Update error:', err);
+      showTemporaryMessage('error', err.message || 'Failed to update event');
+    }
+  };
+
   const formatDate = (value) => {
     if (!value) return 'Date TBD';
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return 'Date TBD';
     return d.toLocaleDateString();
+  };
+
+  const getToastColors = (toastMsg) => {
+    if (!toastMsg) return { bg: '#ecfdf5', text: '#059669', border: '#a7f3d0' };
+    
+    if (toastMsg.type === 'success') {
+      const status = toastMsg.status;
+      if (status === 'Approved') {
+        return { bg: '#ecfdf5', text: '#059669', border: '#a7f3d0' };
+      }
+      if (status === 'Pending') {
+        return { bg: '#fffbeb', text: '#d97706', border: '#fcd34d' };
+      }
+      if (status === 'Rejected') {
+        return { bg: '#fef2f2', text: '#dc2626', border: '#fca5a5' };
+      }
+    }
+    return { bg: '#fee2e2', text: '#991b1b', border: '#fecaca' };
   };
 
   const baseButtonStyle = {
@@ -474,120 +548,25 @@ export default function EventApproval() {
     }
   };
 
-  return (
-    <>
-      <Helmet>
-        <title>Event Approval - EventSync Admin</title>
-      </Helmet>
-
-      <AdminSidebar />
-      <div style={{ marginLeft: '260px', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-
-<div
-  style={{
-    background: 'linear-gradient(135deg, #0f172a 0%, #111827 50%, #1e293b 100%)',
-    color: '#fff',
-    padding: '40px 0 42px', // adjusted top padding since no top navbar
-    marginTop: '0'
-  }}
->
-  <div className="container">
-    <h1
-  style={{
-    fontSize: 'clamp(28px, 4vw, 40px)',
-    fontWeight: 800,
-    marginBottom: '10px',
-    letterSpacing: '-0.02em',
-    lineHeight: 1.2,
-    color: '#f8fafc', // brighter heading color
-    textShadow: '0 2px 10px rgba(0,0,0,0.25)'
-  }}
->
-   Event Approval Management
-</h1>
-    <p
-      style={{
-        color: 'rgba(255,255,255,0.78)',
-        margin: 0,
-        fontSize: '16px'
-      }}
-    >
-      Review, approve, reject, and manage submitted events with a cleaner admin experience.
-    </p>
-  </div>
-</div>
-
-      <div style={styles.contentSection}>
-        <div className="container">
-          {successMessage && (
-            <div
-              style={{
-                ...styles.messageBox,
-                background: '#ecfdf5',
-                color: '#065f46',
-                border: '1px solid #a7f3d0'
-              }}
-            >
-              {successMessage}
-            </div>
-          )}
-
-          {error && (
-            <div
-              style={{
-                ...styles.messageBox,
-                background: '#fef2f2',
-                color: '#991b1b',
-                border: '1px solid #fecaca'
-              }}
-            >
-              {error}
-            </div>
-          )}
-
-          {selectedEvents.length > 0 && (
-            <div style={styles.bulkBar}>
-              <div style={{ fontWeight: 700, color: '#0f172a' }}>
-                {selectedEvents.length} event(s) selected
-              </div>
-
-              <div style={styles.bulkActions}>
-                <button
-                  onClick={() => handleBulkAction('approve')}
-                  style={styles.approveBtn}
-                >
-                  Approve Selected
-                </button>
-                <button
-                  onClick={() => handleBulkAction('reject')}
-                  style={styles.rejectBtn}
-                >
-                  Reject Selected
-                </button>
-                <button
-                  onClick={() => handleBulkAction('pending')}
-                  style={styles.pendingBtn}
-                >
-                  Mark Pending
-                </button>
-              </div>
-            </div>
-          )}
-
-          {loading ? (
-            <div style={styles.emptyState}>Loading events...</div>
-          ) : filteredEvents.length === 0 ? (
-            <div style={styles.emptyState}>
-              <h4 style={{ marginBottom: '8px', color: '#0f172a', fontWeight: 800 }}>
-                No events found
-              </h4>
-              <p style={{ margin: 0 }}>
-                There are no events available under the selected tab right now.
-              </p>
-            </div>
-          ) : (
-            <div className="row" style={styles.gridRow}>
-              {filteredEvents.map((event) => (
+  const renderEventsList = () => {
+    if (loading) {
+      return <div style={styles.emptyState}>Loading events...</div>;
+    }
+    if (filteredEvents.length === 0) {
+      return (
+        <div style={styles.emptyState}>
+          <h4 style={{ marginBottom: '8px', color: '#0f172a', fontWeight: 800 }}>
+            No events found
+          </h4>
+          <p style={{ margin: 0 }}>
+            There are no events available under the selected tab right now.
+          </p>
+        </div>
+      );
+    }
+    return (
+      <div className="row" style={styles.gridRow}>
+        {filteredEvents.map((event) => (
                 <div key={event._id} className="col-lg-6 mb-4" style={styles.cardCol}>
                   <div style={styles.card}>
                     <div style={styles.cardTopRow}>
@@ -663,6 +642,17 @@ export default function EventApproval() {
                       </button>
 
                       <button
+                        onClick={() => handleEdit(event)}
+                        style={{
+                          ...baseButtonStyle,
+                          background: '#4f46e5',
+                          color: '#fff'
+                        }}
+                      >
+                        Edit
+                      </button>
+
+                      <button
                         onClick={() => setShowDeleteModal(event._id)}
                         style={styles.deleteBtn}
                       >
@@ -673,13 +663,204 @@ export default function EventApproval() {
                 </div>
               ))}
             </div>
+        );
+  };
+
+  return (
+    <>
+      <Helmet>
+        <title>Event Approval - EventSync Admin</title>
+      </Helmet>
+
+      <AdminSidebar />
+      <div style={{ marginLeft: '260px', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+
+<div
+  style={{
+    background: 'linear-gradient(135deg, #0f172a 0%, #111827 50%, #1e293b 100%)',
+    color: '#fff',
+    padding: '40px 0 42px', // adjusted top padding since no top navbar
+    marginTop: '0'
+  }}
+>
+  <div className="container">
+    <h1
+  style={{
+    fontSize: 'clamp(28px, 4vw, 40px)',
+    fontWeight: 800,
+    marginBottom: '10px',
+    letterSpacing: '-0.02em',
+    lineHeight: 1.2,
+    color: '#f8fafc', // brighter heading color
+    textShadow: '0 2px 10px rgba(0,0,0,0.25)'
+  }}
+>
+   Event Approval Management
+</h1>
+    <p
+      style={{
+        color: 'rgba(255,255,255,0.78)',
+        margin: 0,
+        fontSize: '16px'
+      }}
+    >
+      Review, approve, reject, and manage submitted events with a cleaner admin experience.
+    </p>
+  </div>
+</div>
+
+      <div style={styles.contentSection}>
+        <div className="container">
+          {toastMessage && (
+            <div
+              style={{
+                position: 'fixed',
+                right: '24px',
+                top: '88px',
+                zIndex: 1100,
+                ...(() => {
+                  const colors = getToastColors(toastMessage);
+                  return {
+                    background: colors.bg,
+                    color: colors.text,
+                    border: `1px solid ${colors.border}`
+                  };
+                })(),
+                borderRadius: '12px',
+                padding: '12px 16px',
+                boxShadow: '0 10px 24px rgba(0, 0, 0, 0.15)',
+                minWidth: '260px',
+                fontWeight: 700
+              }}
+            >
+              {toastMessage.text}
+            </div>
           )}
-        </div>
-      </div>
+
+          {successMessage && (
+            <div
+              style={{
+                ...styles.messageBox,
+                background: '#ecfdf5',
+                color: '#065f46',
+                border: '1px solid #a7f3d0'
+              }}
+            >
+              {successMessage}
+            </div>
+          )}
+
+          {error && (
+            <div
+              style={{
+                ...styles.messageBox,
+                background: '#fef2f2',
+                color: '#991b1b',
+                border: '1px solid #fecaca'
+              }}
+            >
+              {error}
+            </div>
+          )}
+
+          <div style={{ marginBottom: '18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search events by title, organizer, venue..."
+              style={{
+                flex: '1 1 320px',
+                padding: '10px 14px',
+                borderRadius: '10px',
+                border: '1px solid #d1d5db',
+                fontSize: '14px',
+                minWidth: '220px'
+              }}
+            />
+            <select
+              value={activeTab}
+              onChange={(e) => setActiveTab(e.target.value)}
+              style={{
+                padding: '10px 14px',
+                borderRadius: '10px',
+                border: '1px solid #d1d5db',
+                background: '#fff',
+                fontSize: '14px',
+                fontWeight: '600',
+                minWidth: '170px'
+              }}
+            >
+              <option value="All">All Status</option>
+              <option value="Pending">Pending</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
+
+          {selectedEvents.length > 0 && (
+            <div style={styles.bulkBar}>
+              <div style={{ fontWeight: 700, color: '#0f172a' }}>
+                {selectedEvents.length} event(s) selected
+              </div>
+
+              <div style={styles.bulkActions}>
+                <button
+                  onClick={() => handleBulkAction('approve')}
+                  style={styles.approveBtn}
+                >
+                  Approve Selected
+                </button>
+                <button
+                  onClick={() => handleBulkAction('reject')}
+                  style={styles.rejectBtn}
+                >
+                  Reject Selected
+                </button>
+                <button
+                  onClick={() => handleBulkAction('pending')}
+                  style={styles.pendingBtn}
+                >
+                  Mark Pending
+                </button>
+              </div>
+            </div>
+          )}
+
+          {renderEventsList()}
+
+          {reasonModal && (
+        <ReasonModal
+          styles={styles}
+          eventId={reasonModal.eventId}
+          newStatus={reasonModal.newStatus}
+          onConfirm={async (reason) => {
+            await performStatusUpdate(reasonModal.eventId, reasonModal.newStatus, reason);
+            setReasonModal(null);
+          }}
+          onCancel={() => setReasonModal(null)}
+        />
+      )}
 
       {showDeleteModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
+        <div 
+          style={styles.modalOverlay}
+          role="presentation"
+          onClick={() => setShowDeleteModal(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setShowDeleteModal(null);
+            }
+          }}
+          tabIndex={-1}
+        >
+          <div 
+            style={styles.modal}
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
             <h3 style={styles.modalTitle}>Confirm Delete</h3>
             <p style={styles.modalText}>
               Are you sure you want to delete this event? This action cannot be undone.
@@ -703,8 +884,547 @@ export default function EventApproval() {
         </div>
       )}
 
+      {showEditForm && editingEvent && (
+        <div 
+          style={styles.modalOverlay} 
+          role="presentation"
+          onClick={() => {
+            setShowEditForm(false);
+            setEditingEvent(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setShowEditForm(false);
+              setEditingEvent(null);
+            }
+          }}
+          tabIndex={-1}
+        >
+          <div
+            style={{
+              ...styles.modal,
+              maxWidth: '800px',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            <h3 style={styles.modalTitle}>Edit Event: {editingEvent.title}</h3>
+            <EventEditFormCompact
+              event={editingEvent}
+              onUpdate={handleUpdate}
+              onCancel={() => {
+                setShowEditForm(false);
+                setEditingEvent(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
+        </div>
+      </div>
       </div>
     </>
+  );
+}
+
+function EventEditFormCompact({ event, onUpdate, onCancel }) {
+  const categoryOptions = [
+    'Technical',
+    'Cultural',
+    'Sports',
+    'Workshop',
+    'Seminar',
+    'Competition',
+    'Conference',
+    'Other'
+  ];
+
+  const facultyOptions = [
+    'Computing',
+    'Engineering',
+    'Business',
+    'Architecture',
+    'Hospitality',
+    'Science',
+    'Other'
+  ];
+
+  const eventTypeOptions = ['Physical', 'Virtual', 'Hybrid'];
+
+  const [formData, setFormData] = React.useState({
+    title: event.title || '',
+    description: event.description || '',
+    category: event.category || 'Technical',
+    eventType: event.eventType || 'Physical',
+    faculty: event.faculty || 'Computing',
+    department: event.department || '',
+    venue: event.venue || '',
+    date: event.date ? new Date(event.date).toISOString().slice(0, 16) : '',
+    endDate: event.endDate ? new Date(event.endDate).toISOString().slice(0, 16) : '',
+    capacity: event.capacity || '',
+    organizerName: event.organizerName || event.organizer || '',
+    organizerEmail: event.organizerEmail || '',
+    phoneNumbers: Array.isArray(event.phoneNumbers)
+      ? event.phoneNumbers.join(', ')
+      : '',
+    societyName: event.societyName || '',
+    budget: event.budget || '',
+    tags: Array.isArray(event.tags) ? event.tags.join(', ') : '',
+    status: event.status || 'Pending'
+  });
+
+  const [errors, setErrors] = React.useState({});
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+    setErrors((prev) => ({ ...prev, [name]: '' }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.title.trim()) newErrors.title = 'Title is required';
+    if (!formData.description.trim()) newErrors.description = 'Description is required';
+    if (!formData.venue.trim()) newErrors.venue = 'Venue is required';
+    if (!formData.date) newErrors.date = 'Date is required';
+    if (!formData.capacity || Number(formData.capacity) < 1) {
+      newErrors.capacity = 'Capacity must be at least 1';
+    }
+    if (!formData.organizerName.trim()) {
+      newErrors.organizerName = 'Organizer name is required';
+    }
+    if (!formData.phoneNumbers.trim()) {
+      newErrors.phoneNumbers = 'At least one phone number is required';
+    }
+
+    if (formData.organizerEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.organizerEmail.trim())) {
+        newErrors.organizerEmail = 'Invalid email address';
+      }
+    }
+
+    if (formData.endDate && formData.date) {
+      const start = new Date(formData.date);
+      const end = new Date(formData.endDate);
+      if (end <= start) {
+        newErrors.endDate = 'End date must be after start date';
+      }
+    }
+
+    return newErrors;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    const formErrors = validateForm();
+
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
+      window.alert(
+        `Please fix the following issues:\n\n• ${Object.values(formErrors).join(
+          '\n• '
+        )}`
+      );
+      return;
+    }
+
+    onUpdate({
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      category: formData.category,
+      eventType: formData.eventType,
+      faculty: formData.faculty,
+      department: formData.department.trim(),
+      venue: formData.venue.trim(),
+      date: formData.date,
+      endDate: formData.endDate || undefined,
+      capacity: Number(formData.capacity),
+      organizerName: formData.organizerName.trim(),
+      organizer: formData.organizerName.trim(),
+      organizerEmail: formData.organizerEmail.trim(),
+      phoneNumbers: formData.phoneNumbers
+        .split(',')
+        .map((p) => p.trim())
+        .filter(Boolean),
+      societyName: formData.societyName.trim(),
+      budget: formData.budget === '' ? 0 : Number(formData.budget),
+      tags: formData.tags
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+    });
+  };
+
+  const fieldStyle = {
+    marginBottom: '16px'
+  };
+
+  const labelStyle = {
+    display: 'block',
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: '8px',
+    fontSize: '14px'
+  };
+
+  const inputStyle = {
+    width: '100%',
+    padding: '10px 12px',
+    borderRadius: '8px',
+    border: '1px solid #e5e7eb',
+    fontSize: '14px',
+    fontFamily: 'inherit'
+  };
+
+  const errorStyle = {
+    color: '#dc2626',
+    fontSize: '12px',
+    marginTop: '4px'
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ marginTop: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Title</label>
+          <input
+            type="text"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            style={inputStyle}
+            required
+          />
+          {errors.title && <div style={errorStyle}>{errors.title}</div>}
+        </div>
+
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Category</label>
+          <select
+            name="category"
+            value={formData.category}
+            onChange={handleChange}
+            style={inputStyle}
+            required
+          >
+            {categoryOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Description</label>
+        <textarea
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
+          rows="3"
+          style={{...inputStyle, fontFamily: 'inherit'}}
+          required
+        />
+        {errors.description && <div style={errorStyle}>{errors.description}</div>}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Date</label>
+          <input
+            type="datetime-local"
+            name="date"
+            value={formData.date}
+            onChange={handleChange}
+            style={inputStyle}
+            required
+          />
+          {errors.date && <div style={errorStyle}>{errors.date}</div>}
+        </div>
+
+        <div style={fieldStyle}>
+          <label style={labelStyle}>End Date</label>
+          <input
+            type="datetime-local"
+            name="endDate"
+            value={formData.endDate}
+            onChange={handleChange}
+            style={inputStyle}
+          />
+          {errors.endDate && <div style={errorStyle}>{errors.endDate}</div>}
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Venue</label>
+          <input
+            type="text"
+            name="venue"
+            value={formData.venue}
+            onChange={handleChange}
+            style={inputStyle}
+            required
+          />
+          {errors.venue && <div style={errorStyle}>{errors.venue}</div>}
+        </div>
+
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Faculty</label>
+          <select
+            name="faculty"
+            value={formData.faculty}
+            onChange={handleChange}
+            style={inputStyle}
+            required
+          >
+            {facultyOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Event Type</label>
+          <select
+            name="eventType"
+            value={formData.eventType}
+            onChange={handleChange}
+            style={inputStyle}
+          >
+            {eventTypeOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Department</label>
+          <input
+            type="text"
+            name="department"
+            value={formData.department}
+            onChange={handleChange}
+            style={inputStyle}
+          />
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Capacity</label>
+          <input
+            type="number"
+            name="capacity"
+            value={formData.capacity}
+            onChange={handleChange}
+            min="1"
+            style={inputStyle}
+            required
+          />
+          {errors.capacity && <div style={errorStyle}>{errors.capacity}</div>}
+        </div>
+
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Budget (LKR)</label>
+          <input
+            type="number"
+            name="budget"
+            value={formData.budget}
+            onChange={handleChange}
+            min="0"
+            style={inputStyle}
+          />
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Organizer Name</label>
+          <input
+            type="text"
+            name="organizerName"
+            value={formData.organizerName}
+            onChange={handleChange}
+            style={inputStyle}
+            required
+          />
+          {errors.organizerName && <div style={errorStyle}>{errors.organizerName}</div>}
+        </div>
+
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Organizer Email</label>
+          <input
+            type="email"
+            name="organizerEmail"
+            value={formData.organizerEmail}
+            onChange={handleChange}
+            style={inputStyle}
+          />
+          {errors.organizerEmail && <div style={errorStyle}>{errors.organizerEmail}</div>}
+        </div>
+      </div>
+
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Phone Numbers (comma-separated)</label>
+        <input
+          type="text"
+          name="phoneNumbers"
+          value={formData.phoneNumbers}
+          onChange={handleChange}
+          placeholder="e.g., +94123456789, +94987654321"
+          style={inputStyle}
+          required
+        />
+        {errors.phoneNumbers && <div style={errorStyle}>{errors.phoneNumbers}</div>}
+      </div>
+
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Society Name</label>
+        <input
+          type="text"
+          name="societyName"
+          value={formData.societyName}
+          onChange={handleChange}
+          style={inputStyle}
+        />
+        {errors.societyName && <div style={errorStyle}>{errors.societyName}</div>}
+      </div>
+
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Tags (comma-separated)</label>
+        <input
+          type="text"
+          name="tags"
+          value={formData.tags}
+          onChange={handleChange}
+          placeholder="e.g., important, featured, popular"
+          style={inputStyle}
+        />
+      </div>
+
+      <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+        <button
+          type="submit"
+          style={{
+            padding: '10px 20px',
+            background: '#16a34a',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '8px',
+            fontWeight: '600',
+            cursor: 'pointer'
+          }}
+        >
+          Save Changes
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            padding: '10px 20px',
+            background: '#e5e7eb',
+            color: '#374151',
+            border: 'none',
+            borderRadius: '8px',
+            fontWeight: '600',
+            cursor: 'pointer'
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function ReasonModal({ styles, eventId, newStatus, onConfirm, onCancel }) {
+  const [reason, setReason] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onConfirm(reason.trim());
+  };
+
+  return (
+    <div 
+      style={styles.modalOverlay}
+      role="presentation"
+      onClick={onCancel}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          onCancel();
+        }
+      }}
+      tabIndex={-1}
+    >
+      <div 
+        style={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <h3 style={styles.modalTitle}>
+          {newStatus === 'Rejected' ? 'Reject Event' : 'Mark as Pending'}
+        </h3>
+        <p style={styles.modalText}>
+          Please provide a reason for {newStatus.toLowerCase()} this event. This will be visible to the event creator.
+        </p>
+
+        <form onSubmit={handleSubmit}>
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder={`Enter ${newStatus.toLowerCase()} reason...`}
+            required
+            style={{
+              width: '100%',
+              minHeight: '100px',
+              padding: '12px',
+              border: '1px solid #d1d5db',
+              borderRadius: '8px',
+              fontSize: '14px',
+              resize: 'vertical',
+              marginBottom: '20px'
+            }}
+          />
+
+          <div style={styles.modalActions}>
+            <button
+              type="button"
+              onClick={onCancel}
+              style={styles.secondaryBtn}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              style={newStatus === 'Rejected' ? styles.rejectBtn : styles.pendingBtn}
+            >
+              {newStatus === 'Rejected' ? 'Reject Event' : 'Mark Pending'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }

@@ -67,6 +67,15 @@ async function connectDB(mongoUri) {
       console.error('      mongodb+srv://user:pass@cluster0.mongodb.net/mydb');
       console.error('  - See README for examples.');
       console.error('Original error:', error.message);
+    } else if (
+      error.message &&
+      error.message.includes('ENOTFOUND')
+    ) {
+      console.error('MongoDB DNS lookup failed for the configured host.');
+      console.error('  - Confirm the MongoDB cluster host name is correct in MONGO_URI.');
+      console.error('  - Verify your machine can resolve the hostname with DNS.');
+      console.error('  - Make sure Atlas network access allows your current IP address.');
+      console.error('Original error:', error.message);
     } else {
       console.error('Failed to connect to MongoDB:', error.message);
     }
