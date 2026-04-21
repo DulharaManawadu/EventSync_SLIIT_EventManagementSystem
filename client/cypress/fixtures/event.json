@@ -1,0 +1,30 @@
+{
+  "adminUser": {
+    "email": "admin@eventsync.lk",
+    "password": "Admin@123"
+  },
+  "studentUser": {
+    "email": "student@eventsync.lk",
+    "password": "Student@123"
+  },
+  "newEvent": {
+    "title": "Cypress Tech Fest 2026",
+    "description": "A comprehensive automated testing event organized by the IT society to explore modern testing frameworks, tools, and best practices for software quality assurance.",
+    "venue": "Main Auditorium A",
+    "category": "Technical",
+    "eventType": "Physical",
+    "faculty": "Computing",
+    "department": "Software Engineering",
+    "date": "2027-06-15T09:00",
+    "endDate": "2027-06-15T17:00",
+    "capacity": "150",
+    "organizerName": "Dulhara Manawadu",
+    "organizerEmail": "dulhara@eventsync.lk",
+    "phoneNumbers": "0771234567",
+    "societyName": "SLIIT IT Society",
+    "budget": "50000",
+    "tags": "testing, tech, workshops"
+  },
+  "updatedEventTitle": "Cypress Tech Fest 2026 - Updated",
+  "updatedVenue": "Main Auditorium B"
+}
