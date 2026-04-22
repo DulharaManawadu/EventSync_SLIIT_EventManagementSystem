@@ -20,6 +20,8 @@ export default function EventAllocation() {
 
   const [isEditMode, setIsEditMode] = useState(false);
 
+  
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -204,7 +206,7 @@ export default function EventAllocation() {
                     </span>
                   </td>
 
-                  <td style={S.td}>
+                  <td style={S.actionsec}>
                     {!e.isAllocated ? (
                       <button style={S.assignBtn} onClick={() => openModal(e)}>
                         Assign
@@ -534,6 +536,12 @@ const S = {
     actionRow: {
       display: "flex",
       justifyContent: "flex-end",
+      gap: "10px",
+      marginTop: "15px"
+    },
+
+    actionsec :{
+      display: "flex",
       gap: "10px",
       marginTop: "15px"
     },
