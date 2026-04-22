@@ -533,6 +533,48 @@ async function getEventAttendanceTable(req, res) {
   }
 }
 
+async function deleteRegistration(req, res) {
+  try {
+    const { registrationId } = req.params;
+
+    if (!isValidId(registrationId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid registration ID format'
+      });
+    }
+
+    const registration = await EventRegistration.findById(registrationId);
+
+    if (!registration) {
+      return res.status(404).json({
+        success: false,
+        message: 'Registration not found'
+      });
+    }
+
+    const eventId = registration.eventId || registration.event;
+    await EventRegistration.deleteOne({ _id: registration._id });
+    const updatedEvent = await syncEventCounters(eventId);
+
+    return res.json({
+      success: true,
+      message: 'Registration removed successfully',
+      data: {
+        registrationId,
+        event: updatedEvent
+      }
+    });
+  } catch (err) {
+    console.error('Delete Registration Error:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error occurred while deleting registration',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+}
+
 async function getMyRegistrations(req, res) {
   try {
     const student = await ensureStudent(req, res);
@@ -635,6 +677,7 @@ module.exports = {
   scanAndCheckIn,
   updateCheckInStatus,
   getEventAttendanceTable,
+  deleteRegistration,
   getAdminQrEventSummary,
   getMyRegistrations
 };

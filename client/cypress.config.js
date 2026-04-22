@@ -22,6 +22,7 @@ module.exports = defineConfig({
 
     // Keep videos of every run (helpful for CI debugging)
     video: true,
+    trashAssetsBeforeRuns: false,
 
     // Take a screenshot only on failure
     screenshotOnRunFailure: true,

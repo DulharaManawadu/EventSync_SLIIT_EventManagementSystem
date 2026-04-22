@@ -27,6 +27,12 @@ router.post(
   controller.scanAndCheckIn
 );
 
+router.delete(
+  '/admin/registrations/:registrationId',
+  authMiddleware.requireRole('Admin'),
+  controller.deleteRegistration
+);
+
 router.get(
   '/admin/events/summary',
   authMiddleware.requireRole('Admin'),
