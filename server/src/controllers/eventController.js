@@ -19,26 +19,6 @@ const sanitizeStringArray = (value) => {
     .filter(Boolean);
 };
 
-const sanitizeSponsorshipTiers = (tiers) => {
-  if (!Array.isArray(tiers)) return [];
-
-  return tiers
-    .map((tier) => ({
-      tierName: trimString(tier?.tierName),
-      price:
-        tier?.price === '' || tier?.price === null || tier?.price === undefined
-          ? undefined
-          : Number(tier.price),
-      benefits: trimString(tier?.benefits)
-    }))
-    .filter(
-      (tier) =>
-        tier.tierName &&
-        tier.price !== undefined &&
-        !Number.isNaN(tier.price) &&
-        tier.benefits
-    );
-};
 
 const buildValidationErrors = (payload, isUpdate = false) => {
   const errors = [];
@@ -344,8 +324,8 @@ async function listEvents(req, res) {
   try {
     const { page = 1, limit = 20, ...filters } = req.query;
 
-    const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const pageNum = Math.max(1, Number.parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, Number.parseInt(limit, 10) || 20));
     const skip = (pageNum - 1) * limitNum;
 
     const allowedFilters = ['status', 'faculty', 'category', 'isFeatured', 'eventType'];
@@ -362,6 +342,8 @@ async function listEvents(req, res) {
     });
 
     const events = await Event.find(filterObj)
+      .populate("venueRef")                 // 🔥 add this
+      .populate("resources.resource") 
       .sort({ date: 1 })
       .skip(skip)
       .limit(limitNum);
@@ -404,7 +386,9 @@ async function getEvent(req, res) {
       });
     }
 
-    const event = await Event.findById(id);
+    const event = await Event.findById(id)
+    .populate("venueRef")
+    .populate("resources.resource");
 
     if (!event) {
       return res.status(404).json({
@@ -645,52 +629,28 @@ async function updateEvent(req, res) {
     const normalized = normalizeEventPayload(req.body, true);
 
     const mergedPayload = {
-      title: normalized.title !== undefined ? normalized.title : event.title,
-      description:
-        normalized.description !== undefined ? normalized.description : event.description,
-      category: normalized.category !== undefined ? normalized.category : event.category,
-      eventType: normalized.eventType !== undefined ? normalized.eventType : event.eventType,
-      faculty: normalized.faculty !== undefined ? normalized.faculty : event.faculty,
-      department:
-        normalized.department !== undefined ? normalized.department : event.department,
-      venue: normalized.venue !== undefined ? normalized.venue : event.venue,
-      date: normalized.date !== undefined ? normalized.date : event.date,
-      endDate: normalized.endDate !== undefined ? normalized.endDate : event.endDate,
-      capacity: normalized.capacity !== undefined ? normalized.capacity : event.capacity,
-      organizerName:
-        normalized.organizerName !== undefined
-          ? normalized.organizerName
-          : event.organizerName,
-      organizer:
-        normalized.organizer !== undefined ? normalized.organizer : event.organizer,
-      organizerEmail:
-        normalized.organizerEmail !== undefined
-          ? normalized.organizerEmail
-          : event.organizerEmail,
-      phoneNumbers:
-        normalized.phoneNumbers !== undefined
-          ? normalized.phoneNumbers
-          : event.phoneNumbers,
-      societyName:
-        normalized.societyName !== undefined ? normalized.societyName : event.societyName,
-      sponsorshipEnabled:
-        normalized.sponsorshipEnabled !== undefined
-          ? normalized.sponsorshipEnabled
-          : event.sponsorshipEnabled,
-      sponsorshipTiers:
-        normalized.sponsorshipTiers !== undefined
-          ? normalized.sponsorshipTiers
-          : event.sponsorshipTiers,
-      budget: normalized.budget !== undefined ? normalized.budget : event.budget,
-      tags: normalized.tags !== undefined ? normalized.tags : event.tags,
-      isFeatured:
-        normalized.isFeatured !== undefined ? normalized.isFeatured : event.isFeatured,
-      // IMPORTANT: include status in merged validation payload
-      status: normalized.status !== undefined ? normalized.status : event.status,
-      rejectionReason:
-        normalized.rejectionReason !== undefined
-          ? normalized.rejectionReason
-          : event.rejectionReason
+      title: normalized.title ?? event.title,
+      description: normalized.description ?? event.description,
+      category: normalized.category ?? event.category,
+      eventType: normalized.eventType ?? event.eventType,
+      faculty: normalized.faculty ?? event.faculty,
+      department: normalized.department ?? event.department,
+      venue: normalized.venue ?? event.venue,
+      date: normalized.date ?? event.date,
+      endDate: normalized.endDate ?? event.endDate,
+      capacity: normalized.capacity ?? event.capacity,
+      organizerName: normalized.organizerName ?? event.organizerName,
+      organizer: normalized.organizer ?? event.organizer,
+      organizerEmail: normalized.organizerEmail ?? event.organizerEmail,
+      phoneNumbers: normalized.phoneNumbers ?? event.phoneNumbers,
+      societyName: normalized.societyName ?? event.societyName,
+      sponsorshipEnabled: normalized.sponsorshipEnabled ?? event.sponsorshipEnabled,
+      sponsorshipTiers: normalized.sponsorshipTiers ?? event.sponsorshipTiers,
+      budget: normalized.budget ?? event.budget,
+      tags: normalized.tags ?? event.tags,
+      isFeatured: normalized.isFeatured ?? event.isFeatured,
+      status: normalized.status ?? event.status,
+      rejectionReason: normalized.rejectionReason ?? event.rejectionReason
     };
 
     const validationErrors = buildValidationErrors(mergedPayload, false);
@@ -1028,10 +988,10 @@ async function advancedAnalytics(req, res) {
           maxBudget,
           featuredEvents: featuredCount,
           sponsoredEvents: sponsorship.sponsoredEvents || 0,
-          sponsorshipRate: parseFloat(sponsorshipRate),
+          sponsorshipRate: Number.parseFloat(sponsorshipRate),
           qrEnabledEvents: qr.qrEnabled || 0,
-          avgEventDurationHours: duration.avgDuration ? parseFloat(duration.avgDuration.toFixed(1)) : 0,
-          maxEventDurationHours: duration.maxDuration ? parseFloat(duration.maxDuration.toFixed(1)) : 0
+          avgEventDurationHours: duration.avgDuration ? Number.parseFloat(duration.avgDuration.toFixed(1)) : 0,
+          maxEventDurationHours: duration.maxDuration ? Number.parseFloat(duration.maxDuration.toFixed(1)) : 0
         },
         breakdown: {
           byStatus: statusBreakdown.map((s) => ({ name: s._id || 'Unknown', value: s.count })),
@@ -1046,7 +1006,7 @@ async function advancedAnalytics(req, res) {
           sponsorship: {
             sponsored: sponsorship.sponsoredEvents || 0,
             nonSponsored: sponsorship.nonSponsoredEvents || 0,
-            rate: parseFloat(sponsorshipRate)
+            rate: Number.parseFloat(sponsorshipRate)
           },
           budgetByCategory: budgetByCategory.map((b) => ({
             name: b._id || 'Unknown', budget: b.totalBudget,

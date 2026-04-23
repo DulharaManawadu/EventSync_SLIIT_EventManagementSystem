@@ -23,6 +23,7 @@ export default function QrGeneration() {
   const [loading, setLoading] = useState(true);
   const [tableLoading, setTableLoading] = useState(false);
   const [toggleLoading, setToggleLoading] = useState(false);
+  const [deleteLoadingId, setDeleteLoadingId] = useState('');
   const [error, setError] = useState('');
   const [scanMessage, setScanMessage] = useState('');
   const [manualToken, setManualToken] = useState('');
@@ -279,6 +280,42 @@ export default function QrGeneration() {
     anchor.click();
     document.body.removeChild(anchor);
     window.URL.revokeObjectURL(url);
+  };
+
+  const handleDeleteRegistration = async (row) => {
+    if (!selectedEventId) {
+      setError('Select an event before removing a registration');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Remove ${row.studentName}'s registration from ${selectedEvent?.title || 'this event'}?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setDeleteLoadingId(row.id);
+      setError('');
+      setScanMessage('');
+
+      const res = await authFetch(`${API_BASE}/admin/registrations/${row.id}`, {
+        method: 'DELETE'
+      });
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || 'Failed to remove registration');
+      }
+
+      setScanMessage(`${row.studentName}'s registration was removed successfully.`);
+      await loadSummary(selectedEventId);
+      await loadAttendance(selectedEventId);
+    } catch (err) {
+      setError(err.message || 'Failed to remove registration');
+    } finally {
+      setDeleteLoadingId('');
+    }
   };
 
   return (
@@ -543,6 +580,7 @@ export default function QrGeneration() {
                             <th style={thStyle}>Registered At</th>
                             <th style={thStyle}>Attendance Status</th>
                             <th style={thStyle}>Checked In At</th>
+                            <th style={thStyle}>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -571,6 +609,25 @@ export default function QrGeneration() {
                                 </span>
                               </td>
                               <td style={tdStyle}>{formatDateTime(row.checkedInAt)}</td>
+                              <td style={tdStyle}>
+                                <button
+                                  onClick={() => handleDeleteRegistration(row)}
+                                  disabled={deleteLoadingId === row.id}
+                                  style={{
+                                    background: '#fee2e2',
+                                    color: '#991b1b',
+                                    border: '1px solid #fecaca',
+                                    borderRadius: '10px',
+                                    padding: '8px 12px',
+                                    fontSize: '12px',
+                                    fontWeight: 700,
+                                    cursor: deleteLoadingId === row.id ? 'not-allowed' : 'pointer',
+                                    opacity: deleteLoadingId === row.id ? 0.65 : 1
+                                  }}
+                                >
+                                  {deleteLoadingId === row.id ? 'Removing...' : 'Remove'}
+                                </button>
+                              </td>
                             </tr>
                           ))}
                         </tbody>

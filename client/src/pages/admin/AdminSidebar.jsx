@@ -43,15 +43,14 @@ export default function AdminSidebar() {
     },
     
     {
-      name: 'Sponsors',
+      name: 'Sponsor-Approval',
       path: '/sponsors',
       description: 'Sponsor Management'
     },
     {
-      name: 'Sponsorship',
-      path: '/sponsorship-management',
-      // icon: '🤝',
-      description: 'Sponsorship Analytics'
+      name: 'Approved-Sponsors',
+      path: '/approved-sponsors',
+      description: 'Sponsor Management'
     },
     {
       name: 'Vendor Management',

@@ -17,6 +17,7 @@ export default function EventApproval() {
   const [toastMessage, setToastMessage] = useState(null); // { type: 'success'|'error', text: '', status: 'Approved'|'Pending'|'Rejected' }
   const [editingEvent, setEditingEvent] = useState(null);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [reasonModal, setReasonModal] = useState(null); // { eventId, newStatus, isBulk: false }
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -104,28 +105,6 @@ export default function EventApproval() {
     return filtered;
   }, [activeTab, events, searchTerm]);
 
-  const tabs = [
-    { key: 'All', label: 'All Events', count: events.length, icon: '📋' },
-    {
-      key: 'Pending',
-      label: 'Pending',
-      count: events.filter((e) => e.status === 'Pending').length,
-      //icon: '⏳'
-    },
-    {
-      key: 'Approved',
-      label: 'Approved',
-      count: events.filter((e) => e.status === 'Approved').length,
-     // icon: '✅'
-    },
-    {
-      key: 'Rejected',
-      label: 'Rejected',
-      count: events.filter((e) => e.status === 'Rejected').length,
-      //icon: '❌'
-    }
-  ];
-
   const handleEventSelection = (eventId) => {
     setSelectedEvents((prev) =>
       prev.includes(eventId)
@@ -135,11 +114,23 @@ export default function EventApproval() {
   };
 
   const handleStatusUpdate = async (eventId, newStatus) => {
+    if (newStatus === 'Rejected' || newStatus === 'Pending') {
+      setReasonModal({ eventId, newStatus, isBulk: false });
+      return;
+    }
+
+    await performStatusUpdate(eventId, newStatus);
+  };
+
+  const performStatusUpdate = async (eventId, newStatus, reason = '') => {
     try {
+      const body = { status: newStatus };
+      if (reason) body.rejectionReason = reason;
+
       const response = await authFetch(`${API_BASE}/${eventId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify(body)
       });
 
       const result = await response.json();
@@ -170,12 +161,14 @@ export default function EventApproval() {
   const handleBulkAction = async (action) => {
     if (selectedEvents.length === 0) return;
 
-    const mappedStatus =
-      action === 'approve'
-        ? 'Approved'
-        : action === 'reject'
-        ? 'Rejected'
-        : 'Pending';
+    let mappedStatus;
+    if (action === 'approve') {
+      mappedStatus = 'Approved';
+    } else if (action === 'reject') {
+      mappedStatus = 'Rejected';
+    } else {
+      mappedStatus = 'Pending';
+    }
 
     try {
       const results = await Promise.all(
@@ -279,6 +272,24 @@ export default function EventApproval() {
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return 'Date TBD';
     return d.toLocaleDateString();
+  };
+
+  const getToastColors = (toastMsg) => {
+    if (!toastMsg) return { bg: '#ecfdf5', text: '#059669', border: '#a7f3d0' };
+    
+    if (toastMsg.type === 'success') {
+      const status = toastMsg.status;
+      if (status === 'Approved') {
+        return { bg: '#ecfdf5', text: '#059669', border: '#a7f3d0' };
+      }
+      if (status === 'Pending') {
+        return { bg: '#fffbeb', text: '#d97706', border: '#fcd34d' };
+      }
+      if (status === 'Rejected') {
+        return { bg: '#fef2f2', text: '#dc2626', border: '#fca5a5' };
+      }
+    }
+    return { bg: '#fee2e2', text: '#991b1b', border: '#fecaca' };
   };
 
   const baseButtonStyle = {
@@ -537,6 +548,124 @@ export default function EventApproval() {
     }
   };
 
+  const renderEventsList = () => {
+    if (loading) {
+      return <div style={styles.emptyState}>Loading events...</div>;
+    }
+    if (filteredEvents.length === 0) {
+      return (
+        <div style={styles.emptyState}>
+          <h4 style={{ marginBottom: '8px', color: '#0f172a', fontWeight: 800 }}>
+            No events found
+          </h4>
+          <p style={{ margin: 0 }}>
+            There are no events available under the selected tab right now.
+          </p>
+        </div>
+      );
+    }
+    return (
+      <div className="row" style={styles.gridRow}>
+        {filteredEvents.map((event) => (
+                <div key={event._id} className="col-lg-6 mb-4" style={styles.cardCol}>
+                  <div style={styles.card}>
+                    <div style={styles.cardTopRow}>
+                      <div style={styles.titleRow}>
+                        {activeTab === 'Pending' && (
+                          <div style={styles.checkboxWrap}>
+                            <input
+                              type="checkbox"
+                              checked={selectedEvents.includes(event._id)}
+                              onChange={() => handleEventSelection(event._id)}
+                              style={styles.checkbox}
+                            />
+                          </div>
+                        )}
+
+                        <h3 style={styles.title}>{event.title}</h3>
+                      </div>
+
+                      <span style={styles.badge(event.status)}>{event.status}</span>
+                    </div>
+
+                    <p style={styles.description}>
+                      {event.description || 'No description available for this event.'}
+                    </p>
+
+                    <div style={styles.detailsGrid}>
+                      <div style={styles.detailItem}>
+                        <span style={styles.detailLabel}>Category:</span>
+                        <span>{event.category || 'N/A'}</span>
+                      </div>
+
+                      <div style={styles.detailItem}>
+                        <span style={styles.detailLabel}>Faculty:</span>
+                        <span>{event.faculty || 'N/A'}</span>
+                      </div>
+
+                      <div style={styles.detailItem}>
+                        <span style={styles.detailLabel}>Organizer:</span>
+                        <span>{event.organizerName || event.organizer || 'N/A'}</span>
+                      </div>
+
+                      <div style={styles.detailItem}>
+                        <span style={styles.detailLabel}>Date:</span>
+                        <span>{formatDate(event.date)}</span>
+                      </div>
+
+                      <div style={styles.detailItem}>
+                        <span style={styles.detailLabel}>Venue:</span>
+                        <span>{event.venue || 'Venue TBD'}</span>
+                      </div>
+                    </div>
+
+                    <div style={styles.actions}>
+                      <button
+                        onClick={() => handleStatusUpdate(event._id, 'Approved')}
+                        style={styles.approveBtn}
+                      >
+                        Approve
+                      </button>
+
+                      <button
+                        onClick={() => handleStatusUpdate(event._id, 'Pending')}
+                        style={styles.pendingBtn}
+                      >
+                        Pending
+                      </button>
+
+                      <button
+                        onClick={() => handleStatusUpdate(event._id, 'Rejected')}
+                        style={styles.rejectBtn}
+                      >
+                        Reject
+                      </button>
+
+                      <button
+                        onClick={() => handleEdit(event)}
+                        style={{
+                          ...baseButtonStyle,
+                          background: '#4f46e5',
+                          color: '#fff'
+                        }}
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        onClick={() => setShowDeleteModal(event._id)}
+                        style={styles.deleteBtn}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+        );
+  };
+
   return (
     <>
       <Helmet>
@@ -589,21 +718,14 @@ export default function EventApproval() {
                 right: '24px',
                 top: '88px',
                 zIndex: 1100,
-                background: toastMessage.type === 'success'
-                  ? (toastMessage.status === 'Approved' ? '#ecfdf5' :
-                     toastMessage.status === 'Pending' ? '#fffbeb' :
-                     toastMessage.status === 'Rejected' ? '#fef2f2' : '#ecfdf5')
-                  : '#fee2e2',
-                color: toastMessage.type === 'success'
-                  ? (toastMessage.status === 'Approved' ? '#059669' :
-                     toastMessage.status === 'Pending' ? '#d97706' :
-                     toastMessage.status === 'Rejected' ? '#dc2626' : '#059669')
-                  : '#991b1b',
-                border: `1px solid ${toastMessage.type === 'success'
-                  ? (toastMessage.status === 'Approved' ? '#a7f3d0' :
-                     toastMessage.status === 'Pending' ? '#fcd34d' :
-                     toastMessage.status === 'Rejected' ? '#fca5a5' : '#a7f3d0')
-                  : '#fecaca'}`,
+                ...(() => {
+                  const colors = getToastColors(toastMessage);
+                  return {
+                    background: colors.bg,
+                    color: colors.text,
+                    border: `1px solid ${colors.border}`
+                  };
+                })(),
                 borderRadius: '12px',
                 padding: '12px 16px',
                 boxShadow: '0 10px 24px rgba(0, 0, 0, 0.15)',
@@ -705,123 +827,40 @@ export default function EventApproval() {
             </div>
           )}
 
-          {loading ? (
-            <div style={styles.emptyState}>Loading events...</div>
-          ) : filteredEvents.length === 0 ? (
-            <div style={styles.emptyState}>
-              <h4 style={{ marginBottom: '8px', color: '#0f172a', fontWeight: 800 }}>
-                No events found
-              </h4>
-              <p style={{ margin: 0 }}>
-                There are no events available under the selected tab right now.
-              </p>
-            </div>
-          ) : (
-            <div className="row" style={styles.gridRow}>
-              {filteredEvents.map((event) => (
-                <div key={event._id} className="col-lg-6 mb-4" style={styles.cardCol}>
-                  <div style={styles.card}>
-                    <div style={styles.cardTopRow}>
-                      <div style={styles.titleRow}>
-                        {activeTab === 'Pending' && (
-                          <div style={styles.checkboxWrap}>
-                            <input
-                              type="checkbox"
-                              checked={selectedEvents.includes(event._id)}
-                              onChange={() => handleEventSelection(event._id)}
-                              style={styles.checkbox}
-                            />
-                          </div>
-                        )}
+          {renderEventsList()}
 
-                        <h3 style={styles.title}>{event.title}</h3>
-                      </div>
-
-                      <span style={styles.badge(event.status)}>{event.status}</span>
-                    </div>
-
-                    <p style={styles.description}>
-                      {event.description || 'No description available for this event.'}
-                    </p>
-
-                    <div style={styles.detailsGrid}>
-                      <div style={styles.detailItem}>
-                        <span style={styles.detailLabel}>Category:</span>
-                        <span>{event.category || 'N/A'}</span>
-                      </div>
-
-                      <div style={styles.detailItem}>
-                        <span style={styles.detailLabel}>Faculty:</span>
-                        <span>{event.faculty || 'N/A'}</span>
-                      </div>
-
-                      <div style={styles.detailItem}>
-                        <span style={styles.detailLabel}>Organizer:</span>
-                        <span>{event.organizerName || event.organizer || 'N/A'}</span>
-                      </div>
-
-                      <div style={styles.detailItem}>
-                        <span style={styles.detailLabel}>Date:</span>
-                        <span>{formatDate(event.date)}</span>
-                      </div>
-
-                      <div style={styles.detailItem}>
-                        <span style={styles.detailLabel}>Venue:</span>
-                        <span>{event.venue || 'Venue TBD'}</span>
-                      </div>
-                    </div>
-
-                    <div style={styles.actions}>
-                      <button
-                        onClick={() => handleStatusUpdate(event._id, 'Approved')}
-                        style={styles.approveBtn}
-                      >
-                        Approve
-                      </button>
-
-                      <button
-                        onClick={() => handleStatusUpdate(event._id, 'Pending')}
-                        style={styles.pendingBtn}
-                      >
-                        Pending
-                      </button>
-
-                      <button
-                        onClick={() => handleStatusUpdate(event._id, 'Rejected')}
-                        style={styles.rejectBtn}
-                      >
-                        Reject
-                      </button>
-
-                      <button
-                        onClick={() => handleEdit(event)}
-                        style={{
-                          ...baseButtonStyle,
-                          background: '#4f46e5',
-                          color: '#fff'
-                        }}
-                      >
-                        Edit
-                      </button>
-
-                      <button
-                        onClick={() => setShowDeleteModal(event._id)}
-                        style={styles.deleteBtn}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+          {reasonModal && (
+        <ReasonModal
+          styles={styles}
+          eventId={reasonModal.eventId}
+          newStatus={reasonModal.newStatus}
+          onConfirm={async (reason) => {
+            await performStatusUpdate(reasonModal.eventId, reasonModal.newStatus, reason);
+            setReasonModal(null);
+          }}
+          onCancel={() => setReasonModal(null)}
+        />
+      )}
 
       {showDeleteModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
+        <div 
+          style={styles.modalOverlay}
+          role="presentation"
+          onClick={() => setShowDeleteModal(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setShowDeleteModal(null);
+            }
+          }}
+          tabIndex={-1}
+        >
+          <div 
+            style={styles.modal}
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
             <h3 style={styles.modalTitle}>Confirm Delete</h3>
             <p style={styles.modalText}>
               Are you sure you want to delete this event? This action cannot be undone.
@@ -846,10 +885,21 @@ export default function EventApproval() {
       )}
 
       {showEditForm && editingEvent && (
-        <div style={styles.modalOverlay} onClick={() => {
-          setShowEditForm(false);
-          setEditingEvent(null);
-        }}>
+        <div 
+          style={styles.modalOverlay} 
+          role="presentation"
+          onClick={() => {
+            setShowEditForm(false);
+            setEditingEvent(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setShowEditForm(false);
+              setEditingEvent(null);
+            }
+          }}
+          tabIndex={-1}
+        >
           <div
             style={{
               ...styles.modal,
@@ -857,7 +907,10 @@ export default function EventApproval() {
               maxHeight: '90vh',
               overflowY: 'auto'
             }}
+            role="dialog"
+            aria-modal="true"
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
           >
             <h3 style={styles.modalTitle}>Edit Event: {editingEvent.title}</h3>
             <EventEditFormCompact
@@ -872,6 +925,8 @@ export default function EventApproval() {
         </div>
       )}
 
+        </div>
+      </div>
       </div>
     </>
   );
@@ -1298,5 +1353,78 @@ function EventEditFormCompact({ event, onUpdate, onCancel }) {
         </button>
       </div>
     </form>
+  );
+}
+
+function ReasonModal({ styles, eventId, newStatus, onConfirm, onCancel }) {
+  const [reason, setReason] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onConfirm(reason.trim());
+  };
+
+  return (
+    <div 
+      style={styles.modalOverlay}
+      role="presentation"
+      onClick={onCancel}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          onCancel();
+        }
+      }}
+      tabIndex={-1}
+    >
+      <div 
+        style={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <h3 style={styles.modalTitle}>
+          {newStatus === 'Rejected' ? 'Reject Event' : 'Mark as Pending'}
+        </h3>
+        <p style={styles.modalText}>
+          Please provide a reason for {newStatus.toLowerCase()} this event. This will be visible to the event creator.
+        </p>
+
+        <form onSubmit={handleSubmit}>
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder={`Enter ${newStatus.toLowerCase()} reason...`}
+            required
+            style={{
+              width: '100%',
+              minHeight: '100px',
+              padding: '12px',
+              border: '1px solid #d1d5db',
+              borderRadius: '8px',
+              fontSize: '14px',
+              resize: 'vertical',
+              marginBottom: '20px'
+            }}
+          />
+
+          <div style={styles.modalActions}>
+            <button
+              type="button"
+              onClick={onCancel}
+              style={styles.secondaryBtn}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              style={newStatus === 'Rejected' ? styles.rejectBtn : styles.pendingBtn}
+            >
+              {newStatus === 'Rejected' ? 'Reject Event' : 'Mark Pending'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }

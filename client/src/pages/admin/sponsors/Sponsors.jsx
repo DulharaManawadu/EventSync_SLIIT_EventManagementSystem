@@ -1,429 +1,546 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import AdminSidebar from "../AdminSidebar";
-import { ToastContainer, toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { getAuthToken } from "../../../utils/auth";
 
-export default function Sponsors() {
+export default function SponsorDashboard() {
+
+  const [events, setEvents] = useState([]);
+  const [selectedEvent, setSelectedEvent] = useState("");
+  const [tier, setTier] = useState("Gold");
+
   const [sponsors, setSponsors] = useState([]);
-  const [activeTab, setActiveTab] = useState("Pending");
-
-  const [viewSponsor, setViewSponsor] = useState(null);
-  const [showViewModal, setShowViewModal] = useState(false);
+  const [summary, setSummary] = useState([]);
 
   const [rejectId, setRejectId] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
 
+  const [viewSponsor, setViewSponsor] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+
+  const token = getAuthToken();
+
+  const authConfig = {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  };
+
+  const TIER_LIMITS = {
+    Gold: 2,
+    Silver: 3,
+    Bronze: 5
+  };
+
+  // ================= INIT =================
   useEffect(() => {
-    fetchSponsors();
+    if (!token) {
+      toast.error("Please login as Admin");
+      return;
+    }
+    fetchEvents();
   }, []);
 
+  useEffect(() => {
+    if (selectedEvent) {
+      fetchSponsors();
+      fetchSummary();
+    }
+  }, [selectedEvent, tier]);
+
+  // ================= FETCH EVENTS =================
+  const fetchEvents = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/events");
+      const eventData = res.data.data || res.data;
+      setEvents(Array.isArray(eventData) ? eventData : []);
+    } catch {
+      toast.error("Failed to load events");
+    }
+  };
+
+  // ================= FETCH SPONSORS =================
   const fetchSponsors = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/sponsors");
+      const res = await axios.get(
+        `http://localhost:5000/api/sponsors/filter?eventId=${selectedEvent}&tier=${tier}&sortBy=amount`,
+        authConfig
+      );
+
       setSponsors(res.data);
-    } catch {
-      toast.error("Failed to fetch sponsors");
+
+    } catch (err) {
+      console.error(err.response?.data || err.message);
+      toast.error(err.response?.data?.message || "Failed to load sponsors");
     }
   };
 
-  // APPROVE
+  // ================= FETCH SUMMARY =================
+  const fetchSummary = async () => {
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/sponsors/summary/${selectedEvent}`,
+        authConfig
+      );
+
+      setSummary(res.data);
+
+    } catch (err) {
+      console.error(err.response?.data || err.message);
+      toast.error(err.response?.data?.message || "Failed to load summary");
+    }
+  };
+
+  // ================= APPROVE =================
   const handleApprove = async (id) => {
     try {
-      await axios.put(`http://localhost:5000/api/sponsors/approve/${id}`);
+      await axios.put(
+        `http://localhost:5000/api/sponsors/approve/${id}`,
+        {},
+        authConfig
+      );
+
       toast.success("Approved");
       fetchSponsors();
-    } catch {
-      toast.error("Failed");
+      fetchSummary();
+
+    } catch (err) {
+      console.error(err.response?.data || err.message);
+      toast.error(err.response?.data?.message || "Failed");
     }
   };
 
-  // REJECT
+  // ================= REJECT =================
   const handleReject = async () => {
     try {
       await axios.put(
         `http://localhost:5000/api/sponsors/reject/${rejectId}`,
-        { rejectionReason: rejectReason }
+        { reason: rejectReason },
+        authConfig
       );
 
       toast.success("Rejected");
       setRejectId(null);
       setRejectReason("");
+
       fetchSponsors();
-    } catch {
-      toast.error("Reject failed");
+      fetchSummary();
+
+    } catch (err) {
+      console.error(err.response?.data || err.message);
+      toast.error(err.response?.data?.message || "Reject failed");
     }
   };
 
-  const filteredSponsors = sponsors.filter(
-    (s) => s.status === activeTab
-  );
+  // ================= CALCULATIONS =================
+  const currentTierData = summary.find(s => s._id === tier);
+  const approvedCount = currentTierData?.approved || 0;
+  const limit = TIER_LIMITS[tier];
 
+  // ================= UI =================
   return (
     <>
-      <AdminSidebar />
-      
+  <AdminSidebar />
+  <ToastContainer />
 
-      {/* HEADER */}
-      <div style={S.topHeader}>
-        <h1 style={S.headerTitle}>Sponsor Management</h1>
-        <p style={S.headerSub}>Manage sponsorship approvals and tracking</p>
+  {/* HEADER */}
+  <div style={S.topHeader}>
+    <h1 style={S.headerTitle}>Sponsor Management</h1>
+    <p style={S.headerSub}>Review and approve sponsor applications</p>
+  </div>
+
+  <div style={S.page}>
+
+    {/* CONTROLS */}
+    <div style={S.controlRow}>
+      <select
+        style={S.input}
+        value={selectedEvent}
+        onChange={(e) => setSelectedEvent(e.target.value)}
+      >
+        <option value="">Select Event</option>
+        {events.map(e => (
+          <option key={e._id} value={e._id}>
+            {e.title}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    {/* TABS */}
+    <div style={S.tabs}>
+      {["Gold", "Silver", "Bronze"].map(t => (
+        <button
+          key={t}
+          style={S.tab(tier === t)}
+          onClick={() => setTier(t)}
+        >
+          {t}
+        </button>
+      ))}
+    </div>
+
+    {/* LIMIT BOX */}
+    {selectedEvent && (
+      <div style={S.limitBox}>
+        {approvedCount} / {limit} {tier} Selected
       </div>
+    )}
 
-      <div style={S.page}>
-        {/* TABS */}
-        <div style={S.tabs}>
-          {["Pending", "Approved", "Rejected"].map((tab) => (
-            <button
-              key={tab}
-              style={S.tab(activeTab === tab)}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab}
-            </button>
+    {/* CARD */}
+    <div style={S.card}>
+
+      <table style={S.table}>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {sponsors.map((s, i) => (
+            <tr key={s._id} style={{ background: "#fff" }}>
+              <td>{i + 1}</td>
+
+              <td>
+                {`${s.createdBy?.firstName} ${s.createdBy?.lastName}`}
+              </td>
+
+              <td>{s.createdBy?.email}</td>
+
+              <td>LKR {s.contributionAmount}</td>
+
+              <td>
+                <span style={S.status(s.status)}>
+                  {s.status}
+                </span>
+              </td>
+
+              <td>
+                <div style={S.actionGroup}>
+
+                  <button
+                    style={S.viewBtn}
+                    onClick={() => {
+                      setViewSponsor(s);
+                      setShowViewModal(true);
+                    }}
+                  >
+                    View
+                  </button>
+
+                  <button
+                    style={S.primaryBtn}
+                    disabled={approvedCount >= limit || s.status === "Approved"}
+                    onClick={() => handleApprove(s._id)}
+                  >
+                    Approve
+                  </button>
+
+                  <button
+                    style={S.rejectBtn}
+                    onClick={() => setRejectId(s._id)}
+                  >
+                    Reject
+                  </button>
+
+                </div>
+              </td>
+            </tr>
           ))}
+        </tbody>
+      </table>
+
+    </div>
+  </div>
+
+  {/* ================= VIEW MODAL ================= */}
+  {showViewModal && viewSponsor && (
+    <div style={S.overlay}>
+      <div style={S.modalLarge}>
+
+        <h2 style={S.modalTitle}>Sponsor Details</h2>
+
+        <div style={S.detailGrid}>
+
+          <div>
+            <p style={S.label}>Company</p>
+            <p>{viewSponsor.createdBy?.companyName || "N/A"}</p>
+          </div>
+
+          <div>
+            <p style={S.label}>Email</p>
+            <p>{viewSponsor.createdBy?.email}</p>
+          </div>
+
+          <div>
+            <p style={S.label}>Contact</p>
+            <p>{viewSponsor.createdBy?.contactNumber || "N/A"}</p>
+          </div>
+
+          <div>
+            <p style={S.label}>Tier</p>
+            <p>{viewSponsor.tier}</p>
+          </div>
+
+          <div>
+            <p style={S.label}>Contribution</p>
+            <p>LKR {viewSponsor.contributionAmount}</p>
+          </div>
+
+          <div>
+            <p style={S.label}>Status</p>
+            <p>{viewSponsor.status}</p>
+          </div>
+
         </div>
 
-        {/* TABLE */}
-        <div style={S.panel}>
-          <table style={S.table}>
-            <thead>
-              <tr>
-                <th style={S.th}>#</th>
-                <th style={S.th}>Company</th>
-                <th style={S.th}>Email</th>
-                <th style={S.th}>Tier</th>
-                <th style={S.th}>Amount</th>
-                <th style={S.th}>Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredSponsors.map((s, i) => (
-                <tr key={s._id} style={S.row}>
-                  <td style={S.td}>{i + 1}</td>
-                  <td style={S.td}>{s.companyName}</td>
-                  <td style={S.td}>{s.contactEmail}</td>
-                  <td style={S.td}>{s.tier}</td>
-                  <td style={S.td}>LKR {s.contributionAmount}</td>
-
-                  <td style={S.td}>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <button
-                      style={S.viewBtn}
-                      onClick={() => {
-                        setViewSponsor(s);
-                        setShowViewModal(true);
-                      }}
-                    >
-                      View
-                    </button>
-
-                    {activeTab === "Pending" && (
-                      <>
-                        <button
-                          style={S.approveBtn}
-                          onClick={() => handleApprove(s._id)}
-                        >
-                          Approve
-                        </button>
-
-                        <button
-                          style={S.rejectBtn}
-                          onClick={() => setRejectId(s._id)}
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div style={S.actions}>
+          <button
+            style={S.secondaryBtn}
+            onClick={() => setShowViewModal(false)}
+          >
+            Close
+          </button>
         </div>
+
       </div>
+    </div>
+  )}
 
-      {/* VIEW MODAL */}
-      {showViewModal && viewSponsor && (
-        <div style={S.overlay}>
-          <div style={S.modal}>
-            <h3>Sponsor Details</h3>
+  {/* ================= REJECT MODAL ================= */}
+  {rejectId && (
+    <div style={S.overlay}>
+      <div style={S.modal}>
 
-            <p><b>Company:</b> {viewSponsor.companyName}</p>
-            <p><b>Email:</b> {viewSponsor.contactEmail}</p>
-            <p><b>Phone:</b> {viewSponsor.contactPhone}</p>
-            <p><b>Tier:</b> {viewSponsor.tier}</p>
-            <p><b>Amount:</b> {viewSponsor.contributionAmount}</p>
-            <p><b>Status:</b> {viewSponsor.status}</p>
-            <p><b>Website:</b> {viewSponsor.website}</p>
-            <p><b>Description:</b> {viewSponsor.description}</p>
+        <h3>Reject Sponsor</h3>
 
-            {viewSponsor.status === "Rejected" && (
-              <p><b>Reason:</b> {viewSponsor.rejectionReason}</p>
-            )}
+        <textarea
+          style={S.textarea}
+          placeholder="Enter rejection reason..."
+          value={rejectReason}
+          onChange={(e) => setRejectReason(e.target.value)}
+        />
 
-            <button onClick={() => setShowViewModal(false)}>
-              Close
-            </button>
-          </div>
+        <div style={S.actions}>
+          <button style={S.secondaryBtn} onClick={() => setRejectId(null)}>
+            Cancel
+          </button>
+
+          <button style={S.rejectBtn} onClick={handleReject}>
+            Confirm Reject
+          </button>
         </div>
-      )}
 
-      {/* REJECT MODAL */}
-      {rejectId && (
-        <div style={S.overlay}>
-          <div style={S.modal}>
-            <h3>Reject Sponsor</h3>
+      </div>
+    </div>
+  )}
 
-            <textarea
-              placeholder="Enter rejection reason"
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-            />
-
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={handleReject}>Submit</button>
-              <button onClick={() => setRejectId(null)}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
-      <ToastContainer position="top-right" autoClose={2000} />
-    </>
+</>
   );
 }
 
-
-
+// ================= STYLES =================
 const S = {
-    topHeader: {
-      marginLeft: 260,
-      background: "linear-gradient(90deg, #0f172a, #1e293b)",
-      color: "#fff",
-      padding: "30px 40px"
-    },
+
+  topHeader: {
+    marginLeft: 260,
+    background: "linear-gradient(90deg, #0f172a, #1e293b)",
+    color: "#fff",
+    padding: "30px 40px",
+    marginTop:"-7%"
+
+  },
+
+  headerTitle: {
+    margin: 0,
+    fontSize: "28px",
+    fontWeight: "800",
+    color: "#fff",
+
+  },
+
+  headerSub: {
+    marginTop: "8px",
+    color: "#cbd5f5"
+  },
+
+  page: {
+    marginLeft: 260,
+    padding: "40px",
+    background: "#f1f5f9",
+    minHeight: "100vh"
+  },
+
+  controlRow: {
+    marginBottom: "20px"
+  },
+
+  input: {
+    padding: "10px",
+    borderRadius: "8px",
+    border: "1px solid #e2e8f0"
+  },
+
+  tabs: {
+    display: "flex",
+    gap: "10px",
+    marginBottom: "15px"
+  },
+
+  tab: (active) => ({
+    padding: "8px 16px",
+    borderRadius: "999px",
+    border: "none",
+    background: active ? "#4f46e5" : "#e2e8f0",
+    color: active ? "#fff" : "#334155",
+    cursor: "pointer",
+    fontWeight: "600"
+  }),
+
+  limitBox: {
+    marginBottom: "15px",
+    padding: "8px 14px",
+    borderRadius: "999px",
+    background: "#fef3c7",
+    color: "#92400e",
+    fontWeight: "600",
+    display: "inline-block"
+  },
+
+  card: {
+    background: "#fff",
+    padding: "20px",
+    borderRadius: "16px"
+  },
+
+  table: {
+    width: "100%",
+    borderCollapse: "separate",
+    borderSpacing: "0 10px"
+  },
+
+  status: (s) => ({
+    padding: "5px 10px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "600",
+    background:
+      s === "Approved" ? "#dcfce7" :
+      s === "Rejected" ? "#fee2e2" :
+      "#e0f2fe",
+    color:
+      s === "Approved" ? "#166534" :
+      s === "Rejected" ? "#991b1b" :
+      "#075985"
+  }),
+
+  actionGroup: {
+    display: "flex",
+    gap: "8px"
+  },
+
+  primaryBtn: {
+    background: "#4f46e5",
+    color: "#fff",
+    border: "none",
+    padding: "6px 12px",
+    borderRadius: "8px",
+    cursor: "pointer"
+  },
+
+  rejectBtn: {
+    background: "#fee2e2",
+    color: "#991b1b",
+    border: "none",
+    padding: "6px 12px",
+    borderRadius: "8px",
+    cursor: "pointer"
+  },
+
+  secondaryBtn: {
+    background: "#e2e8f0",
+    border: "none",
+    padding: "8px 14px",
+    borderRadius: "8px",
+    cursor: "pointer"
+  },
+
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.5)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center"
+  },
+
+  modal: {
+    background: "#fff",
+    padding: "20px",
+    borderRadius: "12px",
+    width: "400px"
+  },
+
+  textarea: {
+    width: "100%",
+    minHeight: "80px",
+    marginTop: "10px",
+    padding: "10px",
+    borderRadius: "8px",
+    border: "1px solid #e2e8f0"
+  },
+
+  actions: {
+    marginTop: "10px",
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "10px"
+  },
+
+
+  viewBtn: {
+    background: "#e0f2fe",
+    color: "#0369a1",
+    border: "none",
+    padding: "6px 12px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontSize: "12px",
+    fontWeight: "600"
+  },
   
-    headerTitle: {
-      margin: 0,
-      fontSize: "28px",
-      fontWeight: "800",
-      color: "#fff",
-    },
+  modalLarge: {
+    background: "#fff",
+    padding: "24px",
+    borderRadius: "16px",
+    width: "600px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "16px"
+  },
   
-    headerSub: {
-      marginTop: "8px",
-      color: "#cbd5f5",
-      fontSize: "14px"
-    },
+  modalTitle: {
+    fontSize: "20px",
+    fontWeight: "700"
+  },
   
-    page: {
-      marginLeft: 260,
-      padding: "30px 40px",
-      background: "#f8fafc",
-      minHeight: "100vh"
-    },
+  detailGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "12px"
+  },
   
-    header: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: "20px"
-    },
-  
-    addBtn: {
-      background: "linear-gradient(135deg,#4f46e5,#2563eb)",
-      color: "#fff",
-      border: "none",
-      padding: "10px 18px",
-      borderRadius: "8px",
-      fontWeight: "600",
-      cursor: "pointer"
-    },
-  
-    panel: {
-      background: "rgba(255,255,255,0.85)",
-      backdropFilter: "blur(12px)",
-      borderRadius: "16px",
-      padding: "20px",
-      border: "1px solid rgba(226,232,240,0.8)",
-      boxShadow: "0 8px 24px rgba(15,23,42,0.08)"
-    },
-  
-    table: {
-      width: "100%",
-      borderCollapse: "separate",
-      borderSpacing: "0 10px" // 🔥 row spacing
-    },
-  
-    th: {
-      textAlign: "left",
-      padding: "12px 16px",
-      fontSize: "12px",
-      fontWeight: "700",
-      color: "#64748b",
-      textTransform: "uppercase",
-      letterSpacing: "0.04em"
-    },
-  
-    td: {
-      padding: "14px 16px",
-      fontSize: "14px",
-      color: "#334155"
-    },
-  
-    row: {
-      background: "#ffffff",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-      borderRadius: "10px",
-      transition: "all 0.2s ease"
-    },
-  
-    badge: (status) => ({
-      padding: "4px 10px",
-      borderRadius: "999px",
-      fontSize: "12px",
-      fontWeight: "600",
-      background:
-        status === "Available"
-          ? "rgba(34,197,94,0.15)"
-          : "rgba(239,68,68,0.15)",
-      color:
-        status === "Available"
-          ? "#16a34a"
-          : "#dc2626"
-    }),
-  
-    editBtn: {
-      background: "#e0e7ff",
-      color: "#3730a3",
-      border: "none",
-      padding: "6px 12px",
-      borderRadius: "6px",
-      cursor: "pointer",
-      fontSize: "12px",
-      fontWeight: "600"
-    },
-  
-    deleteBtn: {
-      background: "#fee2e2",
-      color: "#b91c1c",
-      border: "none",
-      padding: "6px 12px",
-      borderRadius: "6px",
-      cursor: "pointer",
-      fontSize: "12px",
-      fontWeight: "600"
-    },
-  
-    overlay: {
-      position: "fixed",
-      inset: 0,
-      background: "rgba(0,0,0,0.5)",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center"
-    },
-  
-    modal: {
-      background: "#fff",
-      padding: "24px",
-      borderRadius: "16px",
-      width: "500px",
-      display: "flex",
-      flexDirection: "column",
-      gap: "16px",
-      boxShadow: "0 10px 30px rgba(0,0,0,0.2)"
-    },
-    
-    modalTitle: {
-      margin: 0,
-      fontSize: "18px",
-      fontWeight: "700"
-    },
-    
-    grid: {
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: "10px"
-    },
-    
-    input: {
-      padding: "10px",
-      borderRadius: "8px",
-      border: "1px solid #e2e8f0",
-      fontSize: "14px"
-    },
-    
-    textarea: {
-      padding: "10px",
-      borderRadius: "8px",
-      border: "1px solid #e2e8f0",
-      minHeight: "80px"
-    },
-    
-    actions: {
-      display: "flex",
-      justifyContent: "flex-end",
-      gap: "10px"
-    },
-    
-    primaryBtn: {
-      background: "#4f46e5",
-      color: "#fff",
-      border: "none",
-      padding: "10px 16px",
-      borderRadius: "8px",
-      cursor: "pointer"
-    },
-    
-    secondaryBtn: {
-      background: "#e2e8f0",
-      border: "none",
-      padding: "10px 16px",
-      borderRadius: "8px",
-      cursor: "pointer"
-    },
-  
-    viewBtn: {
-      background: "#ecfeff",
-      color: "#0e7490",
-      border: "none",
-      padding: "6px 12px",
-      borderRadius: "6px",
-      cursor: "pointer",
-      fontSize: "12px",
-      fontWeight: "600"
-    },
-    tabs:{display:"flex",gap:"10px",marginBottom:"20px"},
-    tab:(active)=>({
-      padding:"8px 16px",
-      background:active?"#4f46e5":"#e2e8f0",
-      color:active?"#fff":"#000",
-      border:"none",
-      borderRadius:"8px"
-    }),
-    approveBtn:{
-        background: "#e0e7ff",
-        color: "#3730a3",
-        border: "none",
-        padding: "6px 12px",
-        borderRadius: "6px",
-        cursor: "pointer",
-        fontSize: "12px",
-        fontWeight: "600"
-    },
-    rejectBtn:{
-        background: "#fee2e2",
-        color: "#b91c1c",
-        border: "none",
-        padding: "6px 12px",
-        borderRadius: "6px",
-        cursor: "pointer",
-        fontSize: "12px",
-        fontWeight: "600"
-    },
-   
-  
-  };
+  label: {
+    fontSize: "12px",
+    color: "#64748b",
+    fontWeight: "600"
+  },
+}; 

@@ -1,9 +1,10 @@
 const Event = require('../models/Event');
-const Resource = require('../models/Resource').default;
-const Venue = require('../models/Venue').default;
+const Resource = require('../models/Resource');
+const Venue = require('../models/Venue');
 
 // ===== ALLOCATE EVENT =====
 exports.allocateEvent = async (req, res) => {
+
   try {
     const { venueId, resources } = req.body;
     const eventId = req.params.id;
@@ -99,6 +100,83 @@ exports.allocateEvent = async (req, res) => {
       success: false,
       message: "Allocation failed",
       error: error.message
+    });
+  }
+};
+
+
+exports.updateAllocation = async (req, res) => {
+  try {
+    const { venueId, resources } = req.body;
+    const eventId = req.params.id;
+
+    const event = await Event.findById(eventId);
+
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    if (!event.isAllocated) {
+      return res.status(400).json({
+        message: "Event is not allocated yet"
+      });
+    }
+
+    // ===== 1. RESTORE OLD RESOURCES =====
+    for (let old of event.resources) {
+      await Resource.findByIdAndUpdate(old.resource, {
+        $inc: { availableQuantity: old.quantity }
+      });
+    }
+
+    // ===== 2. VALIDATE NEW RESOURCES =====
+    const newAllocation = [];
+
+    for (let item of resources) {
+      const resource = await Resource.findById(item.resource);
+
+      if (!resource) {
+        return res.status(404).json({
+          message: `Resource not found`
+        });
+      }
+
+      if (item.quantity > resource.availableQuantity) {
+        return res.status(400).json({
+          message: `Not enough ${resource.name}`
+        });
+      }
+
+      newAllocation.push({
+        resource: resource._id,
+        quantity: item.quantity
+      });
+    }
+
+    // ===== 3. DEDUCT NEW RESOURCES =====
+    for (let item of resources) {
+      await Resource.findByIdAndUpdate(item.resource, {
+        $inc: { availableQuantity: -item.quantity }
+      });
+    }
+
+    // ===== 4. UPDATE EVENT =====
+    event.venueRef = venueId;
+    event.resources = newAllocation;
+
+    await event.save();
+
+    res.json({
+      success: true,
+      message: "Allocation updated successfully",
+      event
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: "Update failed",
+      error: err.message
     });
   }
 };

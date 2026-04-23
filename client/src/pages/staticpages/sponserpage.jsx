@@ -4,28 +4,31 @@ import Header from "../Header";
 import Footer from "../Footer";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { getAuthToken } from "../../utils/auth";
+
 
 export default function SponsorRegister() {
+
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
   const [form, setForm] = useState({
-    companyName: "",
-    contactEmail: "",
-    contactPhone: "",
-    website: "",
-    logoUrl: "",
     tier: "Gold",
     contributionAmount: ""
   });
+
+  const token = getAuthToken();
 
   useEffect(() => {
     fetchEvents();
   }, []);
 
+  // ================= FETCH EVENTS =================
   const fetchEvents = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/events");
+
       const data = res.data.data || res.data;
 
       const filtered = data.filter(
@@ -36,44 +39,49 @@ export default function SponsorRegister() {
       );
 
       setEvents(filtered);
+
     } catch {
       toast.error("Failed to load events");
     }
   };
 
+  // ================= OPEN MODAL =================
   const openModal = (event) => {
     setSelectedEvent(event);
-  
     setForm({
-      companyName: "",
-      contactEmail: "",
-      contactPhone: "",
-      website: "",
-      logoUrl: "",
       tier: "Gold",
       contributionAmount: ""
     });
-  
     setShowModal(true);
   };
 
+  // ================= SUBMIT =================
   const handleSubmit = async () => {
-    if (!form.companyName) return toast.error("Company required");
-    if (!form.contactEmail.includes("@")) return toast.error("Valid email required");
-    if (!form.contributionAmount) return toast.error("Amount required");
-  
+
+    if (!form.contributionAmount) {
+      return toast.error("Contribution amount required");
+    }
+
     try {
-      await axios.post("http://localhost:5000/api/sponsors", {
-        ...form,
-        contributionAmount: Number(form.contributionAmount),
-        event: selectedEvent._id
-      });
-  
-      toast.success("Application submitted!");
+      await axios.post(
+        "http://localhost:5000/api/sponsors",
+        {
+          tier: form.tier,
+          contributionAmount: Number(form.contributionAmount),
+          event: selectedEvent._id
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      toast.success("Application submitted successfully!");
       setShowModal(false);
-  
-    } catch {
-      toast.error("Submission failed");
+
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Submission failed");
     }
   };
 
@@ -84,22 +92,23 @@ export default function SponsorRegister() {
 
       {/* HERO */}
       <div style={S.hero}>
-        <div style={S.heroOverlay} />
+        <div style={S.overlay} />
         <div style={S.heroContent}>
-          <h1 style={S.headerTitle}>Sponsor Events</h1>
-          <p style={S.headerSub}>Partner with us and grow your brand through impactful events</p>
+          <h1 style={S.heroContenth1}>Sponsor Events</h1>
+          <p style={S.heroContentp1}>Partner with events and grow your brand visibility</p>
         </div>
       </div>
 
-      {/* SECTION */}
+      {/* EVENTS SECTION */}
       <div style={S.section}>
-        <h2>Available Sponsorship Events</h2>
-        <p>Select an event and apply as a sponsor</p>
+
+        <h2>Available Sponsorship Opportunities</h2>
+        <p>Select an event to apply as a sponsor</p>
 
         <div style={S.grid}>
           {events.map((e) => (
             <div key={e._id} style={S.card}>
-              
+
               <div style={S.cardTop}>
                 <span style={S.badge}>{e.category}</span>
                 <span style={S.date}>
@@ -118,98 +127,62 @@ export default function SponsorRegister() {
                 <p><b>Faculty:</b> {e.faculty}</p>
               </div>
 
-              <button
-                style={S.btn}
-                onClick={() => {
-                  setSelectedEvent(e);
-                  setShowModal(true);
-                }}
-              >
-                Become a Sponsor
+              <button style={S.btn} onClick={() => openModal(e)}>
+                Apply as Sponsor
               </button>
+
             </div>
           ))}
         </div>
       </div>
 
+      {/* MODAL */}
       {showModal && selectedEvent && (
-  <div style={S.overlay}>
-    <div style={S.modal}>
-      
-      <h2 style={{ marginBottom: "5px" }}>
-        Sponsor: {selectedEvent.title}
-      </h2>
-      <p style={{ fontSize: "13px", color: "#64748b" }}>
-        Submit your sponsorship request
-      </p>
+        <div style={S.modalOverlay}>
+          <div style={S.modal}>
 
-      <div style={S.formGrid}>
-        
-        <input
-          
-          style={S.input}
-          placeholder="Company Name"
-          value={form.companyName}
-          onChange={(e)=>setForm({...form,companyName:e.target.value})}
-        />
+            <h2>{selectedEvent.title}</h2>
+            <p style={S.sub}>Choose your sponsorship tier and contribution</p>
 
-        <input
-          placeholder="Email"
-          style={S.input}
-          value={form.contactEmail}
-          onChange={(e)=>setForm({...form,contactEmail:e.target.value})}
-        />
+            <div style={S.form}>
 
-        <input
-          placeholder="Phone"
-          style={S.input}
-          value={form.contactPhone}
-          onChange={(e)=>setForm({...form,contactPhone:e.target.value})}
-        />
+              <select
+                style={S.input}
+                value={form.tier}
+                onChange={(e) =>
+                  setForm({ ...form, tier: e.target.value })
+                }
+              >
+                <option>Gold</option>
+                <option>Silver</option>
+                <option>Bronze</option>
+              </select>
 
-        <input
-          placeholder="Website"
-          style={S.input}
-          value={form.website}
-          onChange={(e)=>setForm({...form,website:e.target.value})}
-        />
+              <input
+                type="number"
+                style={S.input}
+                placeholder="Contribution Amount (LKR)"
+                value={form.contributionAmount}
+                onChange={(e) =>
+                  setForm({ ...form, contributionAmount: e.target.value })
+                }
+              />
 
-        <select
-          value={form.tier}
-          style={S.input}
-          onChange={(e)=>setForm({...form,tier:e.target.value})}
-        >
-          <option>Gold</option>
-          <option>Silver</option>
-          <option>Bronze</option>
-        </select>
+            </div>
 
-        <input
-          type="number"
-          style={S.input}
-          placeholder="Contribution Amount"
-          value={form.contributionAmount}
-          onChange={(e)=>setForm({...form,contributionAmount:e.target.value})}
-        />
+            <div style={S.actions}>
+              <button style={S.primary} onClick={handleSubmit}>
+                Submit
+              </button>
 
-      </div>
+              <button style={S.secondary} onClick={() => setShowModal(false)}>
+                Cancel
+              </button>
+            </div>
 
-      <div style={S.modalActions}>
-        <button style={S.primaryBtn} onClick={handleSubmit}>
-          Submit Application
-        </button>
-
-        <button
-          style={S.secondaryBtn}
-          onClick={()=>setShowModal(false)}
-        >
-          Cancel
-        </button>
-      </div>
-
-    </div>
-  </div>
-)}
+          </div>
+        </div>
+      )}
 
       <Footer />
     </>
@@ -217,70 +190,59 @@ export default function SponsorRegister() {
 }
 
 const S = {
+
   hero: {
-    position: "relative",
-    height: "300px",
-    backgroundImage:
-      "url('https://images.unsplash.com/photo-1552664730-d307ca884978')",
-    backgroundSize: "cover",
-    backgroundPosition: "center"
-  },
-
-  headerTitle: {
-    margin: 0,
-    fontSize: "28px",
-    fontWeight: "800",
+    height: "220px",
+    background: "linear-gradient(90deg,#0f172a,#1e293b)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     color: "#fff",
+    position: "relative",
+    top:"-120px",
   },
 
-  headerSub: {
-    marginTop: "8px",
-    color: "#cbd5f5",
-    fontSize: "14px"
-  },
-
-  heroOverlay: {
+  overlay: {
     position: "absolute",
     inset: 0,
-    background: "rgba(15,23,42,0.75)"
+    background: "rgba(0,0,0,0.4)"
   },
 
   heroContent: {
     position: "relative",
-    zIndex: 2,
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
+    textAlign: "center",
     color: "#fff",
-    textAlign: "center"
+  },
+
+  heroContenth1: {
+    position: "relative",
+    textAlign: "center",
+    color: "#fff",
+  },
+
+  heroContentp1: {
+    position: "relative",
+    textAlign: "center",
+    color: "#fff",
   },
 
   section: {
-    padding: "200px 200px",
-    background: "#f8fafc",
-    textAlign: "center"
+    padding: "40px 200px 40px",
+    background: "#f1f5f9"
   },
 
   grid: {
-    marginTop: "80px",
     display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)", 
-    gap: "40px"
+    gridTemplateColumns: "repeat(auto-fill,minmax(380px,1fr))",
+    gap: "20px",
+    marginTop: "20px"
   },
 
   card: {
-    background: "#ffffff",
-    borderRadius: "18px",
-    padding: "25px",
-    textAlign: "left",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    minHeight: "320px",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.06)",
-    transition: "all 0.25s ease"
+    background: "#fff",
+    padding: "18px",
+    borderRadius: "16px",
+    boxShadow: "0 6px 20px rgba(0,0,0,0.06)"
   },
 
   cardTop: {
@@ -290,12 +252,10 @@ const S = {
   },
 
   badge: {
-    background: "linear-gradient(135deg,#6366f1,#3b82f6)",
-    color: "#fff",
-    padding: "4px 12px",
+    background: "#e0e7ff",
+    padding: "4px 10px",
     borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "600"
+    fontSize: "12px"
   },
 
   date: {
@@ -304,29 +264,27 @@ const S = {
   },
 
   desc: {
-    fontSize: "14px",
-    color: "#475569",
-    margin: "10px 0"
+    fontSize: "13px",
+    color: "#475569"
   },
 
   meta: {
     fontSize: "13px",
-    color: "#334155",
-    marginBottom: "15px"
+    marginTop: "10px"
   },
 
   btn: {
-    marginTop: "auto",
-    padding: "12px",
+    marginTop: "12px",
+    width: "100%",
+    padding: "10px",
     borderRadius: "10px",
-    border: "none",
-    background: "linear-gradient(135deg,#4f46e5,#2563eb)",
+    background: "#4f46e5",
     color: "#fff",
-    fontWeight: "600",
+    border: "none",
     cursor: "pointer"
   },
 
-  overlay: {
+  modalOverlay: {
     position: "fixed",
     inset: 0,
     background: "rgba(0,0,0,0.5)",
@@ -337,55 +295,50 @@ const S = {
 
   modal: {
     background: "#fff",
-    padding: "30px",
-    borderRadius: "18px",
-    width: "700px",
+    padding: "24px",
+    borderRadius: "16px",
+    width: "400px"
+  },
+
+  sub: {
+    fontSize: "13px",
+    color: "#64748b"
+  },
+
+  form: {
     display: "flex",
     flexDirection: "column",
-    gap: "15px",
-    boxShadow: "0 20px 50px rgba(0,0,0,0.2)"
+    gap: "12px",
+    marginTop: "15px"
   },
-  
-  formGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "12px"
-  },
-  
-  modalActions: {
-    display: "flex",
-    justifyContent: "flex-end",
-    gap: "10px",
-    marginTop: "10px"
-  },
-  
-  primaryBtn: {
-    background: "linear-gradient(135deg,#4f46e5,#2563eb)",
-    color: "#fff",
-    border: "none",
-    padding: "10px 18px",
-    borderRadius: "8px",
-    cursor: "pointer"
-  },
-  
-  secondaryBtn: {
-    background: "#e2e8f0",
-    border: "none",
-    padding: "10px 18px",
-    borderRadius: "8px",
-    cursor: "pointer"
-  },
+
   input: {
     padding: "10px",
     borderRadius: "8px",
-    border: "1px solid #e2e8f0",
-    fontSize: "14px"
+    border: "1px solid #e2e8f0"
   },
-  
-  textarea: {
-    padding: "10px",
+
+  actions: {
+    marginTop: "15px",
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "10px"
+  },
+
+  primary: {
+    background: "#4f46e5",
+    color: "#fff",
+    border: "none",
+    padding: "8px 14px",
     borderRadius: "8px",
-    border: "1px solid #e2e8f0",
-    minHeight: "80px"
+    cursor: "pointer"
   },
+
+  secondary: {
+    background: "#e2e8f0",
+    border: "none",
+    padding: "8px 14px",
+    borderRadius: "8px",
+    cursor: "pointer"
+  }
 };

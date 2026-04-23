@@ -1,23 +1,43 @@
 const express = require("express");
+
 const {
   applySponsor,
   getSponsors,
+  getSponsorsByEvent,
   approveSponsor,
-  rejectSponsor
+  rejectSponsor,
+  getTierSummary,
+  getApprovedSponsorsWithEvents,
+  deleteAllSponsors
 } = require("../controllers/sponsorController");
+
+// ✅ Correct import
+const { requireAuth, requireRole } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
 // APPLY
-router.post("/", applySponsor);
+router.post("/", requireRole("Sponsor"), applySponsor);
 
 // GET ALL
-router.get("/", getSponsors);
+router.get("/", requireAuth, getSponsors);
 
-// APPROVE
-router.put("/approve/:id", approveSponsor);
+// FILTER
+router.get("/filter", requireAuth, getSponsorsByEvent);
 
-// REJECT
-router.put("/reject/:id", rejectSponsor);
+// APPROVE (Admin)
+router.put("/approve/:id", requireRole("Admin"), approveSponsor);
+
+// REJECT (Admin)
+router.put("/reject/:id", requireRole("Admin"), rejectSponsor);
+
+// SUMMARY
+router.get("/summary/:eventId", requireAuth, getTierSummary);
+
+// REPORT
+router.get("/approved/all", requireAuth, getApprovedSponsorsWithEvents);
+
+// DELETE ALL (Admin)
+router.delete("/all", requireRole("Admin"), deleteAllSponsors);
 
 module.exports = router;

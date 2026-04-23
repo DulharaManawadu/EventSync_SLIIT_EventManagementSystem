@@ -238,12 +238,10 @@ export default function Home() {
                           </button>
                         </div>
                         <div className="orange-button" style={{ opacity: currentUser ? 1 : 0.6 }}>
-                          <button
-                            type="button"
-                            onClick={() => handleNavClick('/sponsers-events', ['Sponsor'])}
-                            style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: currentUser ? 'pointer' : 'not-allowed' }}
-                          >
-                            Become a Sponsor
+                          
+            
+                          <button type="button" onClick={() => navigate('/sponsers-events')} style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: currentUser ? 'pointer' : 'not-allowed' }}>
+                          Become a Sponsor
                           </button>
                         </div>
                       </div>
