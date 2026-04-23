@@ -55,3 +55,4 @@ backups/
 # IDE specific
 .vscode/settings.json
 .vscode/launch.json
+node_modules/
