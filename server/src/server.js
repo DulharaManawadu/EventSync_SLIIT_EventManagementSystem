@@ -82,6 +82,7 @@ app.use('/api/sponsors', require('./routes/sponsorRoutes'));
 app.use('/api/resources', require('./routes/resourceRoutes'));
 app.use('/api/allocations', require('./routes/allocationRoutes'));
 app.use('/api/admin/vendors', require('./routes/vendorAdminRoutes'));
+app.use('/api/admin/users', require('./routes/userAdminRoutes'));
 
 
 // ===== 404 Handler =====
