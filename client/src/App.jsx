@@ -28,6 +28,7 @@ import EventAllocation from './pages/admin/allocation/EventAllocation.jsx';
 import QrGeneration from './pages/admin/qrGeneration/QrGeneration';
 import VendorManagement from './pages/admin/VendorManagement';
 import VendorApplicationDetailsAdmin from './pages/admin/VendorApplicationDetailsAdmin';
+import UserManagement from './pages/admin/UserManagement';
 import MyRegistrations from './pages/events/MyRegistrations';
 import ApprovedSponsors from './pages/admin/sponsors/SponserList.jsx';
 
@@ -65,6 +66,7 @@ function App() {
         <Route path="/qr-generation" element={<ProtectedRoute roles={['Admin']}><QrGeneration /></ProtectedRoute>} />
         <Route path="/vendor-management" element={<ProtectedRoute roles={['Admin']}><VendorManagement /></ProtectedRoute>} />
         <Route path="/vendor-application-admin/:id" element={<ProtectedRoute roles={['Admin']}><VendorApplicationDetailsAdmin /></ProtectedRoute>} />
+        <Route path="/user-management" element={<ProtectedRoute roles={['Admin']}><UserManagement /></ProtectedRoute>} />
         
         {/* additional routes */}
       </Routes>
