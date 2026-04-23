@@ -7,6 +7,7 @@ import { authFetch, clearAuth, getCurrentUser } from '../../utils/auth';
 
 export default function VendorProfile() {
   const [profile, setProfile] = useState(null);
+  const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -17,13 +18,26 @@ export default function VendorProfile() {
   const loadProfile = async () => {
     setLoading(true);
     try {
-      const res = await authFetch('http://localhost:5000/api/vendors/profile');
-      if (!res.ok) {
-        const data = await res.json();
+      const [profileRes, appsRes] = await Promise.all([
+        authFetch('http://localhost:5000/api/vendors/profile'),
+        authFetch('http://localhost:5000/api/vendors/applications')
+      ]);
+
+      if (!profileRes.ok) {
+        const data = await profileRes.json();
         throw new Error(data.message || 'Unable to fetch profile.');
       }
-      const data = await res.json();
-      setProfile(data.data);
+
+      if (!appsRes.ok) {
+        const data = await appsRes.json();
+        throw new Error(data.message || 'Unable to fetch applications.');
+      }
+
+      const profileData = await profileRes.json();
+      const appsData = await appsRes.json();
+
+      setProfile(profileData.data);
+      setApplications(Array.isArray(appsData.data) ? appsData.data : []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -154,7 +168,7 @@ export default function VendorProfile() {
                             <i className="fas fa-file-alt"></i>
                           </div>
                           <div className="stat-content">
-                            <h4>{profile?.totalApplications || 0}</h4>
+                            <h4>{applications.length}</h4>
                             <p>Total Applications</p>
                           </div>
                         </div>
@@ -163,7 +177,7 @@ export default function VendorProfile() {
                             <i className="fas fa-check-circle"></i>
                           </div>
                           <div className="stat-content">
-                            <h4>{profile?.approvedApplications || 0}</h4>
+                            <h4>{applications.filter(app => app.status === 'Approved').length}</h4>
                             <p>Approved Applications</p>
                           </div>
                         </div>
@@ -172,7 +186,7 @@ export default function VendorProfile() {
                             <i className="fas fa-clock"></i>
                           </div>
                           <div className="stat-content">
-                            <h4>{profile?.pendingApplications || 0}</h4>
+                            <h4>{applications.filter(app => app.status === 'Pending').length}</h4>
                             <p>Pending Applications</p>
                           </div>
                         </div>
