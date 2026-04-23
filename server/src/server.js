@@ -14,8 +14,24 @@ dotenv.config();
 const app = express();
 
 // ===== CORS Configuration =====
+const configuredClientUrl = process.env.CLIENT_URL;
+const localDevOriginPattern = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+
 const corsOptions = {
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin(origin, callback) {
+    // Allow non-browser tools or same-origin calls without an Origin header.
+    if (!origin) return callback(null, true);
+
+    if (configuredClientUrl && origin === configuredClientUrl) {
+      return callback(null, true);
+    }
+
+    if (localDevOriginPattern.test(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('CORS origin not allowed'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
