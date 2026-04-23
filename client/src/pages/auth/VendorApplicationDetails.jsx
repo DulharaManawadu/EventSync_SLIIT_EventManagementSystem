@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
+import { jsPDF } from 'jspdf';
 import Header from '../../pages/Header';
 import Footer from '../../pages/Footer';
 import { authFetch } from '../../utils/auth';
@@ -92,6 +93,58 @@ export default function VendorApplicationDetails() {
     } catch (err) {
       setError(err.message);
     }
+  };
+
+  const onPrintApplication = () => {
+    if (!application || application.status !== 'Approved') return;
+
+    const doc = new jsPDF();
+    let y = 20;
+    const lineHeight = 8;
+
+    const eventTitle = application.event?.title || application.eventTitle || 'Deleted Event';
+    const eventDate = new Date(application.event?.date || application.eventDate || '').toLocaleString();
+    const eventLocation = application.event?.venue || application.event?.societyName || application.eventVenue || 'N/A';
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('Application Details', 14, y);
+    y += 12;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(12);
+    doc.text(`Event: ${eventTitle}`, 14, y);
+    y += lineHeight;
+    doc.text(`Date: ${eventDate}`, 14, y);
+    y += lineHeight;
+    doc.text(`Location: ${eventLocation}`, 14, y);
+    y += lineHeight;
+    doc.text(`Status: ${application.status}`, 14, y);
+    y += 12;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Submitted Stall Details', 14, y);
+    y += 10;
+
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Stall Name: ${application.stallName || 'N/A'}`, 14, y);
+    y += lineHeight;
+    doc.text(`Food Type: ${application.foodType || 'N/A'}`, 14, y);
+    y += 12;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Menu Items:', 14, y);
+    y += 10;
+    doc.setFont('helvetica', 'normal');
+
+    (application.menuItems || []).forEach((item) => {
+      const price = Number(item.price);
+      const priceText = Number.isNaN(price) ? item.price : price.toFixed(2);
+      doc.text(`${item.name} - Rs ${priceText}`, 18, y);
+      y += lineHeight;
+    });
+
+    doc.save(`application-${application._id || id}.pdf`);
   };
 
   return (
@@ -192,6 +245,11 @@ export default function VendorApplicationDetails() {
                         <button onClick={onWithdraw} className="orange-button">
                           Withdraw Application
                         </button>
+                        {application.status === 'Approved' && (
+                          <button onClick={onPrintApplication} className="orange-button">
+                            Print Application
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

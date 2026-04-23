@@ -153,10 +153,6 @@ export default function VendorProfile() {
                           <label>Food Safety Certificate</label>
                           <span>{profile?.user?.foodSafetyCertificate || 'Not provided'}</span>
                         </div>
-                        <div className="info-item">
-                          <label>Company Email</label>
-                          <span>{profile?.user?.companyEmail || 'N/A'}</span>
-                        </div>
                       </div>
                     </div>
 
