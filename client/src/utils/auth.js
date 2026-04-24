@@ -40,5 +40,18 @@ export function authFetch(url, options = {}) {
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     },
     credentials: 'include'
+  }).then(async (response) => {
+    if (response.status === 401) {
+      try {
+        const body = await response.clone().json();
+        if (body?.code === 'TOKEN_EXPIRED' || body?.code === 'INVALID_TOKEN') {
+          clearAuth();
+        }
+      } catch {
+        // Ignore non-JSON 401 responses
+      }
+    }
+
+    return response;
   });
 }
