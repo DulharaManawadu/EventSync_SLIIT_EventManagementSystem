@@ -153,3 +153,25 @@ Cypress.Commands.add('fillCreateEventForm', (eventData) => {
   // Description last (textarea)
   cy.get('#description').clear().type(eventData.description);
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// cy.setVendorSession()
+//   Injects a Vendor session into localStorage without any network call.
+//   Mirrors setAdminSession() and setStudentSession() patterns.
+// ─────────────────────────────────────────────────────────────────────────────
+Cypress.Commands.add('setVendorSession', () => {
+  const mockUser = {
+    _id: 'mock-vendor-id',
+    firstName: 'Test',
+    lastName: 'Vendor',
+    email: 'vendor@eventsync.lk',
+    userType: 'Vendor',
+    brandName: 'Test Brand Co.',
+    contactNumber: '0771234567',
+    userId: 'VN12345678'
+  };
+  cy.window().then((win) => {
+    win.localStorage.setItem('eventsync_token', 'mock-jwt-token-vendor');
+    win.localStorage.setItem('eventsync_user', JSON.stringify(mockUser));
+  });
+});

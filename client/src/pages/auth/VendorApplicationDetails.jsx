@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
+import { jsPDF } from 'jspdf';
 import Header from '../../pages/Header';
 import Footer from '../../pages/Footer';
 import { authFetch } from '../../utils/auth';
@@ -94,6 +95,58 @@ export default function VendorApplicationDetails() {
     }
   };
 
+  const onPrintApplication = () => {
+    if (!application || application.status !== 'Approved') return;
+
+    const doc = new jsPDF();
+    let y = 20;
+    const lineHeight = 8;
+
+    const eventTitle = application.event?.title || application.eventTitle || 'Deleted Event';
+    const eventDate = new Date(application.event?.date || application.eventDate || '').toLocaleString();
+    const eventLocation = application.event?.venue || application.event?.societyName || application.eventVenue || 'N/A';
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('Application Details', 14, y);
+    y += 12;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(12);
+    doc.text(`Event: ${eventTitle}`, 14, y);
+    y += lineHeight;
+    doc.text(`Date: ${eventDate}`, 14, y);
+    y += lineHeight;
+    doc.text(`Location: ${eventLocation}`, 14, y);
+    y += lineHeight;
+    doc.text(`Status: ${application.status}`, 14, y);
+    y += 12;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Submitted Stall Details', 14, y);
+    y += 10;
+
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Stall Name: ${application.stallName || 'N/A'}`, 14, y);
+    y += lineHeight;
+    doc.text(`Food Type: ${application.foodType || 'N/A'}`, 14, y);
+    y += 12;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Menu Items:', 14, y);
+    y += 10;
+    doc.setFont('helvetica', 'normal');
+
+    (application.menuItems || []).forEach((item) => {
+      const price = Number(item.price);
+      const priceText = Number.isNaN(price) ? item.price : price.toFixed(2);
+      doc.text(`${item.name} - Rs ${priceText}`, 18, y);
+      y += lineHeight;
+    });
+
+    doc.save(`application-${application._id || id}.pdf`);
+  };
+
   return (
     <>
       <Helmet>
@@ -101,9 +154,9 @@ export default function VendorApplicationDetails() {
       </Helmet>
       <Header />
 
-      <div style={{ minHeight: '100vh', padding: '140px 20px 40px', backgroundImage: `url(${slide01})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
+      <div className="vendor-application-details-page" style={{ minHeight: '100vh', padding: '140px 20px 40px', backgroundImage: `url(${slide01})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
         <div style={{ maxWidth: '1000px', margin: 'auto', background: 'rgba(255, 255, 255, 0.95)', borderRadius: '18px', padding: '36px', boxShadow: '0 16px 50px rgba(0,0,0,0.08)' }}>
-          <button onClick={() => navigate('/vendor-dashboard')} className="orange-button" style={{ marginBottom: '10px', padding: '8px 12px', fontSize: '0.85rem' }}>
+          <button onClick={() => navigate('/vendor-dashboard')} className="orange-button" style={{ marginBottom: '10px' }}>
             ← Back to Dashboard
           </button>
 
@@ -166,7 +219,7 @@ export default function VendorApplicationDetails() {
                       <button type="submit" className="orange-button">
                         Save Application
                       </button>
-                      <button type="button" className="orange-button" onClick={() => setIsEditing(false)} style={{ background: '#64748b' }}>
+                      <button type="button" className="orange-button" onClick={() => setIsEditing(false)}>
                         Cancel
                       </button>
                     </div>
@@ -189,9 +242,14 @@ export default function VendorApplicationDetails() {
                       </div>
                       <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #e5e7eb', display: 'flex', gap: '10px' }}>
                         <button onClick={() => setIsEditing(true)} className="orange-button">Edit Application</button>
-                        <button onClick={onWithdraw} className="orange-button" style={{ backgroundColor: '#ef4444' }}>
+                        <button onClick={onWithdraw} className="orange-button">
                           Withdraw Application
                         </button>
+                        {application.status === 'Approved' && (
+                          <button onClick={onPrintApplication} className="orange-button">
+                            Print Application
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -202,6 +260,25 @@ export default function VendorApplicationDetails() {
             )}
         </div>
       </div>
+
+      <style>{`
+        .vendor-application-details-page .orange-button {
+          background: linear-gradient(135deg, #ff6b2c, #ff8f3d);
+          color: #ffffff;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 15px rgba(255, 107, 44, 0.3);
+        }
+
+        .vendor-application-details-page .orange-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(255, 107, 44, 0.4);
+        }
+      `}</style>
 
       <Footer />
     </>

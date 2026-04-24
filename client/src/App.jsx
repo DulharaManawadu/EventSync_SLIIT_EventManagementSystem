@@ -28,7 +28,9 @@ import EventAllocation from './pages/admin/allocation/EventAllocation.jsx';
 import QrGeneration from './pages/admin/qrGeneration/QrGeneration';
 import VendorManagement from './pages/admin/VendorManagement';
 import VendorApplicationDetailsAdmin from './pages/admin/VendorApplicationDetailsAdmin';
+import UserManagement from './pages/admin/UserManagement';
 import MyRegistrations from './pages/events/MyRegistrations';
+import ApprovedSponsors from './pages/admin/sponsors/SponserList.jsx';
 
 function App() {
   return (
@@ -59,10 +61,12 @@ function App() {
         <Route path="/venues" element={<ProtectedRoute roles={['Admin']}><Venues /></ProtectedRoute>} />
         <Route path="/resources" element={<ProtectedRoute roles={['Admin']}><Resources /></ProtectedRoute>} />
         <Route path="/sponsors" element={<ProtectedRoute roles={['Admin']}><Sponsors /></ProtectedRoute>} />
+        <Route path="/approved-sponsors" element={<ProtectedRoute roles={['Admin']}><ApprovedSponsors /></ProtectedRoute>} />
         <Route path="/event-allocation" element={<ProtectedRoute roles={['Admin']}><EventAllocation /></ProtectedRoute>} />
         <Route path="/qr-generation" element={<ProtectedRoute roles={['Admin']}><QrGeneration /></ProtectedRoute>} />
         <Route path="/vendor-management" element={<ProtectedRoute roles={['Admin']}><VendorManagement /></ProtectedRoute>} />
         <Route path="/vendor-application-admin/:id" element={<ProtectedRoute roles={['Admin']}><VendorApplicationDetailsAdmin /></ProtectedRoute>} />
+        <Route path="/user-management" element={<ProtectedRoute roles={['Admin']}><UserManagement /></ProtectedRoute>} />
         
         {/* additional routes */}
       </Routes>
