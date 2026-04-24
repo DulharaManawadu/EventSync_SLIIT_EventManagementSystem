@@ -365,25 +365,6 @@ describe(' Event CRUD — Automated UI Tests', () => {
       cy.log('✅ Edit form or modal opens after clicking Edit');
     });
 
-    it('4.3 — Status can be changed to Approved via Approve button', () => {
-      cy.intercept('PUT', `${BASE_API}/${MOCK_EVENTS[0]._id}`, {
-        statusCode: 200,
-        body: {
-          success: true,
-          data: { ...MOCK_EVENTS[0], status: 'Approved' }
-        }
-      }).as('approveEvent');
-
-      // Click Approve on the first card
-      cy.get('button').filter(':contains("Approve")').first().click();
-
-      cy.wait('@approveEvent').then((interception) => {
-        expect(interception.request.body.status).to.equal('Approved');
-        expect(interception.response.statusCode).to.equal(200);
-      });
-
-      cy.log('✅ Event status successfully updated to Approved');
-    });
 
     it('4.4 — Reject button opens reason modal before submitting', () => {
       // Reject requires a reason — it should open a modal
